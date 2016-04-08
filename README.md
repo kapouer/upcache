@@ -40,8 +40,6 @@ The application updates that number by setting an HTTP Response header X-Cache-V
 and the nginx handlers update that version, thus forcing a miss on all next requests.
 
 
-
-
 Installation
 ------------
 
@@ -49,29 +47,31 @@ Installation
 
 nginx <= 1.9.10
 
-The nginx source tree,
+* The nginx source tree,
 apt-get source nginx = 1.9.10
 
-The srcache source
+* The srcache source
 https://github.com/openresty/srcache-nginx-module/archive/v0.30.tar.gz
 to be extracted to
 nginx/debian/modules/srcache-nginx-module
 
-The openresty's memc source
+* The openresty's memc source
 https://github.com/openresty/memc-nginx-module/archive/v0.16.tar.gz
 to be extracted to
 nginx/debian/modules/memc-nginx-module
 
-The openresty's set-misc source
+* The openresty's set-misc source
 https://github.com/openresty/set-misc-nginx-module/archive/v0.30.tar.gz
 to be extracted to
 nginx/debian/modules/set-misc-nginx-module
 
 To build nginx-extra debian package with those two modules, simply append
 those two flags to extras_configure_flags in debian/rules:
+```
 --add-module=$(MODULESDIR)/memc-nginx-module
 --add-module=$(MODULESDIR)/srcache-nginx-module
 --add-module=$(MODULESDIR)/set-misc-nginx-module
+```
 
 
 ### memcached
