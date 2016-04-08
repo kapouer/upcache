@@ -50,20 +50,11 @@ nginx <= 1.9.10
 * The nginx source tree,
 apt-get source nginx = 1.9.10
 
-* The srcache source
-https://github.com/openresty/srcache-nginx-module/archive/v0.30.tar.gz
-to be extracted to
-nginx/debian/modules/srcache-nginx-module
+* Extract [srcache source](https://github.com/openresty/srcache-nginx-module/archive/v0.30.tar.gz) to nginx/debian/modules/srcache-nginx-module
 
-* The openresty's memc source
-https://github.com/openresty/memc-nginx-module/archive/v0.16.tar.gz
-to be extracted to
-nginx/debian/modules/memc-nginx-module
+* Extract [openresty's memc source](https://github.com/openresty/memc-nginx-module/archive/v0.16.tar.gz) to nginx/debian/modules/memc-nginx-module
 
-* The openresty's set-misc source
-https://github.com/openresty/set-misc-nginx-module/archive/v0.30.tar.gz
-to be extracted to
-nginx/debian/modules/set-misc-nginx-module
+* Extract [openresty's set-misc source](https://github.com/openresty/set-misc-nginx-module/archive/v0.30.tar.gz) to nginx/debian/modules/set-misc-nginx-module
 
 To build nginx-extra debian package with those two modules, simply append
 those two flags to extras_configure_flags in debian/rules:
