@@ -28,6 +28,7 @@ Version protocol
 ----------------
 
 This protocol is the simplest one possible.
+The whole cache is invalidated upon successful non-GET method.
 
 The srcache cache key contains a global $version number.
 
