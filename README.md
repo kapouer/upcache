@@ -19,7 +19,7 @@ The implementations defined here require:
 Each implementation comes in two parts:
 
 - a Node.js module with an express middleware, e.g.  
-  ```app.use(require('cache-protocols').version);```
+  ```app.use(require('cache-protocols/version'));```
 
 - a configuration file for nginx
 
