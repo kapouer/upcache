@@ -1,0 +1,24 @@
+{
+  "name": "cache-protocols",
+  "version": "0.0.0",
+  "description": "cache protocols implementations between proxy and application",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:kapouer/cache-protocols.git"
+  },
+  "keywords": [
+    "cache",
+    "protocols",
+    "nginx",
+    "purge"
+  ],
+  "author": "Jérémy Lal <kapouer@melix.org>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kapouer/cache-protocols/issues"
+  }
+}
