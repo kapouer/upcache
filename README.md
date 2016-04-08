@@ -14,6 +14,8 @@ The implementations defined here require:
   https://github.com/openresty/srcache-nginx-module/archive/v0.30.tar.gz
 - memc-nginx-module  
   https://github.com/openresty/memc-nginx-module/archive/v0.16.tar.gz
+- set-misc-nginx-module  
+  https://github.com/openresty/set-misc-nginx-module/archive/v0.30.tar.gz
 - a memcached backend
 
 Each implementation comes in two parts:
