@@ -4,6 +4,24 @@ cache-protocols
 Protocols defining how an application should exchange headers with
 a proxy in order to be able to maintain an up-to-date cache.
 
+
+Architecture
+------------
+
+An HTTP 1.1 proxy with cache abilities, proxying an upstream application.
+
+The implementations shown here use
+
+- nginx
+- lua as configuration language
+- shared memory as lookup cache
+- remote memcached as data cache, optional, and also replaceable by a non-volatile store
+- a Node.js/express application
+
+
+Requirements
+------------
+
 The implementations defined here require:
 
 - a Node.js application
@@ -26,20 +44,6 @@ Each implementation comes in two parts:
   `app.use(require('cache-protocols/version'));`
 
 - a configuration file for nginx
-
-
-Version protocol
-----------------
-
-This protocol is the simplest one possible.
-The whole cache is invalidated upon successful non-GET method.
-
-The srcache cache key contains a global $version number.
-
-All requests sent to the application have the X-Cache-Version header set with current version.
-
-The application updates that number by setting an HTTP Response header X-Cache-Version,
-and the nginx handlers update that version, thus forcing a miss on all next requests.
 
 
 Installation
