@@ -16,6 +16,8 @@ The implementations defined here require:
   https://github.com/openresty/memc-nginx-module/archive/v0.16.tar.gz
 - set-misc-nginx-module  
   https://github.com/openresty/set-misc-nginx-module/archive/v0.30.tar.gz
+- headers-more-nginx-module  
+  https://github.com/openresty/headers-more-nginx-module/archive/v0.30rc1.tar.gz
 - a memcached backend
 
 Each implementation comes in two parts:
@@ -55,6 +57,8 @@ apt-get source nginx = 1.9.10
 * Extract [openresty's memc source](https://github.com/openresty/memc-nginx-module/archive/v0.16.tar.gz) to nginx/debian/modules/memc-nginx-module
 
 * Extract [openresty's set-misc source](https://github.com/openresty/set-misc-nginx-module/archive/v0.30.tar.gz) to nginx/debian/modules/set-misc-nginx-module
+
+* headers-more-nginx-module is already available in nginx-extra debian package
 
 To build nginx-extra debian package with those two modules, simply append
 those two flags to extras_configure_flags in debian/rules:
