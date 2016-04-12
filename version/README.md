@@ -4,6 +4,8 @@ Version protocol
 This protocol is the simplest and the coarsest.
 The whole cache is invalidated upon successful non-GET method.
 
+TODO: ability to restrict cache by domain, by path
+
 
 Store
 -----
