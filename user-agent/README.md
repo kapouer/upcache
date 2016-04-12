@@ -1,11 +1,35 @@
 User-Agent protocol
--------------------
+===================
 
-User-Agent -> parsed user agent -> conditions -> match
+Using the same database for user agent parsing, the application can
+return which conditions were applied to a resource.
+
+
+Installation
+------------
 
 https://github.com/MySiteApp/nginx-ua-parse-module/archive/0.3.tar.gz
+npm install useragent
 
-The application must send a response with browser versions ranges,
-and it is a good idea to use the same ua parser, which is the case for
-nginx-ua-parse-module and useragent Node.js module.
+Do not forget to update the database on both sides.
+
+
+Store
+-----
+
+The application parses User-Agent request header, modifies the resource
+accordingly (typically using a different html template) and send a list of
+browser minversion maxversion
+in X-Cache-Agent HTTP response header.
+
+store key = browser-ranges-list + url
+store lookup = browser-ranges-list
+
+
+Fetch
+-----
+
+First a lookup is made on the url, and if X-Cache-Agent lists are found,
+User-Agent is parsed and matched against each list. The first match is used to
+build the request key = list + url.
 
