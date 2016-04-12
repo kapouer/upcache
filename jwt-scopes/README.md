@@ -50,6 +50,7 @@ The application must use the cookie named "Bearer" to store the jsonwebtoken,
 and it must send a response with an HTTP header
 X-Cache-Scope: webmaster
 X-Cache-Scope: user 25
+X-Cache-Scope-Limit: 2
 
 Only scopes giving read access are listed here.
 
@@ -63,21 +64,14 @@ Fetch
 -----
 
 Upon request, the lookup will return zero, one, or several lists of scopes.
-If the request jwt.scopes exists and match one of these lists, the lookup
-is successful and data is fetched from cache.
+A successful variant lookup matches all these conditions:
+- variant.scopes.length > 0
+- jwt.scopes exists and contains the list of scopes  
+  in particular, `jwt.scopes.length >= variant.scopes.length`
+- if variant.scopes.limit is not defined or zero,
+  or if `variant.scopes.length < variant.scopes.limit`,
+  this must be true `jwt.scopes.length == variant.scopes.length`  
+  The current request cannot claim more scopes or else it could get a different
+  result because the variant scopes could be greater than the scopes used
+  for lookup.
 
-** there are ways to improve this, like flagging a scope as mandatory **
-
-
-Limitations
------------
-
-* as defined here, if a single scope is granted in a response but the request
-  claims more scopes, the lookup will fail because the protocol cannot assume
-  the response won't change when requesting with more scopes.
-  This is a problem in the given example, if a given url depends actually on a
-  single scope. The client should request with only the minimum set of scopes
-  required for that url... Or the protocol must define a way for the application
-  to tell the proxy there won't ever be a variant of the url that grants a wider
-  set of scopes.
-  
