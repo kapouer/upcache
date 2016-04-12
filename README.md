@@ -19,6 +19,36 @@ The implementations shown here use
 - a Node.js/express application
 
 
+### Protocol
+
+A protocol defines the function checking request headers against constraints
+returned by the application, and the response and request headers exchanged
+between application and proxy.
+
+### Caches
+
+There are two caches, the variants cache and the data cache:
+
+- one for storing urls and their variants (in json strings)
+- one for storing the data for each key
+
+### Fetch
+
+First it looks up the known variants of the url, each variant defines a function
+name (the one of the protocol involved) and stores a list of strings which define
+how the url varies. If `function(url, headers, constraints)` return true,
+the constraints are used to build the cache key.
+
+Second it fetches the data from the second cache using the key built previously.
+
+### Store
+
+In case of cacheable response, the cache-protocol response headers returned by
+the application are stored into the variants cache, and the resulting key
+(built similarly to the Fetch phase, without the function call) is used to
+store the data into the data cache.
+
+
 Requirements
 ------------
 
