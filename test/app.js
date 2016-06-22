@@ -9,7 +9,8 @@ memc.stdout.pipe(process.stdout);
 memc.stderr.pipe(process.stderr);
 
 var nginx = spawn('/usr/sbin/nginx', [
-	'-p', __dirname, '-c', 'nginx.conf'
+	'-p', __dirname,
+	'-c', 'nginx.conf'
 ]);
 nginx.stdout.pipe(process.stdout);
 nginx.stderr.pipe(process.stderr);
@@ -29,6 +30,5 @@ app.post('*', function(req, res, next) {
 });
 
 app.listen(3032, function() {
-console.log(arguments);
 	console.log("http://localhost:3032");
 });
