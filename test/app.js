@@ -18,7 +18,7 @@ nginx.stderr.pipe(process.stderr);
 app.use(cache);
 
 app.get('*', function(req, res, next) {
-	console.log("GET");
+	console.log("GET", req.headers);
 	res.send({
 		date: new Date()
 	});
