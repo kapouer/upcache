@@ -30,6 +30,7 @@ describe("Loading ressources", function suite() {
 			debug("app received GET");
 			getCounterA++;
 			res.send({
+				value: (req.path || '/').substring(1),
 				date: new Date()
 			});
 		});
@@ -48,15 +49,16 @@ describe("Loading ressources", function suite() {
 
 	it("should increase version when sending a POST, else keep same version", function() {
 		getCounterA = 0;
-		return runner.get(uri)
+		return runner.get(uri + '/a')
 		.then(function(res) {
 			res.headers.should.have.property('x-cache-version', '1');
-			return runner.post(uri, 'postbody');
+			return runner.post(uri + '/b', 'postbody');
 		}).then(function() {
-			return runner.get(uri);
+			return runner.get(uri + '/a');
 		}).then(function(res) {
+			res.body.should.have.property('value', 'a');
 			res.headers.should.have.property('x-cache-version', '2');
-			return runner.get(uri);
+			return runner.get(uri + '/a');
 		}).then(function(res) {
 			res.headers.should.have.property('x-cache-version', '2');
 			getCounterA.should.equal(2);
