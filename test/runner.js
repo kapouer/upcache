@@ -44,7 +44,15 @@ function close() {
 module.exports.get = function(uri) {
 	return new Promise(function(resolve, reject) {
 		http.get(uri, function(res) {
-			resolve(res);
+			var body = "";
+			res.setEncoding('utf8');
+			res.on('data', (chunk) => {
+				body += chunk;
+			});
+			res.on('end', () => {
+				res.body = JSON.parse(body);
+				resolve(res);
+			});
 		}).once('error', function(err) {
 			reject(err);
 		});
