@@ -3,6 +3,9 @@ var express = require('express');
 var http = require('http');
 var fs = require('fs');
 var URL = require('url');
+var Transform = require('stream').Transform;
+var util = require('util');
+
 process.chdir(__dirname);
 
 module.exports = function(opts) {
@@ -29,7 +32,7 @@ module.exports = function(opts) {
 			'-c', './nginx.conf'
 		]);
 		obj.nginx.stdout.pipe(process.stdout);
-		obj.nginx.stderr.pipe(process.stderr);
+		obj.nginx.stderr.pipe(new FilterNginxError()).pipe(process.stderr);
 	}
 	obj.close = close.bind(obj);
 	return obj;
@@ -75,3 +78,14 @@ module.exports.post = function(uri, data) {
 		console.error(err);
 	});
 };
+
+function FilterNginxError(options) {
+	Transform.call(this, options);
+}
+util.inherits(FilterNginxError, Transform);
+FilterNginxError.prototype._transform = function(chunk, enc, cb) {
+	var str = chunk.toString();
+	if (/nginx: \[alert\] could not open error log file: open.*/.test(str) == false) this.push(chunk);
+	cb();
+};
+
