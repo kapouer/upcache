@@ -5,7 +5,7 @@ var debug = require('debug')('version');
 
 var port = 3000;
 
-describe("Loading ressources", function suite() {
+describe("Per-domain version", function suite() {
 	var servers;
 	var uri = 'http://localhost:' + port;
 	var getCounterA;
@@ -47,7 +47,7 @@ describe("Loading ressources", function suite() {
 		done();
 	});
 
-	it("should increase version when sending a POST, else keep same version", function() {
+	it("should increase version of all resources when sending a POST", function() {
 		getCounterA = 0;
 		return runner.get(uri + '/a')
 		.then(function(res) {
