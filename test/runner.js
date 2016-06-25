@@ -85,7 +85,8 @@ function FilterNginxError(options) {
 util.inherits(FilterNginxError, Transform);
 FilterNginxError.prototype._transform = function(chunk, enc, cb) {
 	var str = chunk.toString();
-	if (/nginx: \[alert\] could not open error log file: open.*/.test(str) == false) this.push(chunk);
+	str = str.replace(/^nginx: \[alert\] could not open error log file: open.*\n/, "");
+	this.push(str);
 	cb();
 };
 
