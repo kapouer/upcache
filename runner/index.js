@@ -10,14 +10,19 @@ process.chdir(__dirname);
 
 module.exports = function(opts) {
 	var obj = {};
+	obj.close = close.bind(obj);
+	process.on('exit', obj.close);
 	if (opts.express) {
 		obj.express = express();
 		obj.express.server = obj.express.listen(opts.express.port);
 	}
 	if (opts.memcached) {
-		obj.memcached = spawn('memcached', ['-v', '-p', opts.memcached.port]);
+		obj.memcached = spawn('memcached', ['-vv', '-p', opts.memcached.port]);
 		obj.memcached.stdout.pipe(process.stdout);
-		obj.memcached.stderr.pipe(process.stderr);
+		obj.memcached.stderr.pipe(new FilterPipe(function(str) {
+			if (/^\<\d+\s[sg]et\s.*$/mig.test(str)) return "[memc] " + str.substring(4);
+		})).pipe(process.stderr);
+		obj.memcached.on('error', obj.close);
 	}
 	if (opts.nginx) {
 		var conf = fs.readFileSync(opts.nginx.conf).toString();
@@ -32,16 +37,33 @@ module.exports = function(opts) {
 			'-c', './nginx.conf'
 		]);
 		obj.nginx.stdout.pipe(process.stdout);
-		obj.nginx.stderr.pipe(new FilterNginxError()).pipe(process.stderr);
+		obj.nginx.stderr.pipe(new FilterPipe(function(str) {
+			str = str.replace(/^nginx: \[alert\] could not open error log file: open.*/, "");
+			str = str.replace(/^.*(\[\w+\]).*?:(.*)$/, function(str, p1, p2) {
+				if (p1 == "[notice]") return "";
+				return p1 + p2;
+			});
+			str = str.replace(/^\[lua\][\d\):]*\s/, "[lua]  ");
+			return str;
+		})).pipe(process.stderr);
+		obj.nginx.on('error', obj.close);
 	}
-	obj.close = close.bind(obj);
 	return obj;
 };
 
 function close() {
-	if (this.nginx) this.nginx.kill('SIGTERM');
-	if (this.memcached) this.memcached.kill('SIGKILL');
-	if (this.express) this.express.server.close();
+	if (this.nginx) {
+		this.nginx.kill('SIGTERM');
+		delete this.nginx;
+	}
+	if (this.memcached) {
+		this.memcached.kill('SIGKILL');
+		delete this.memcached;
+	}
+	if (this.express) {
+		this.express.server.close();
+		delete this.express;
+	}
 }
 
 module.exports.get = function(uri) {
@@ -79,14 +101,19 @@ module.exports.post = function(uri, data) {
 	});
 };
 
-function FilterNginxError(options) {
-	Transform.call(this, options);
+function FilterPipe(matcher) {
+	Transform.call(this);
+	this.matcher = matcher;
 }
-util.inherits(FilterNginxError, Transform);
-FilterNginxError.prototype._transform = function(chunk, enc, cb) {
-	var str = chunk.toString();
-	str = str.replace(/^nginx: \[alert\] could not open error log file: open.*\n/, "");
-	this.push(str);
+util.inherits(FilterPipe, Transform);
+FilterPipe.prototype._transform = function(chunk, enc, cb) {
+	var lines = [];
+	chunk.toString().split('\n').forEach(function(str) {
+		str = this.matcher(str);
+		if (str) lines.push(str);
+	}.bind(this));
+	if (lines.length) lines.push('');
+	this.push(lines.join('\n'));
 	cb();
 };
 

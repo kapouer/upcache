@@ -1,11 +1,11 @@
 var should = require('should');
 var fs = require('fs');
-var runner = require('./runner');
-var debug = require('debug')('version');
+var runner = require('../runner');
+var debug = require('debug')('tag');
 
 var port = 3000;
 
-describe("Per-domain version", function suite() {
+describe("Tag", function suite() {
 	var servers;
 	var uri = 'http://localhost:' + port;
 	var getCounterA;
@@ -20,11 +20,11 @@ describe("Per-domain version", function suite() {
 			},
 			nginx: {
 				port: port,
-				conf: '../version/nginx.conf'
+				conf: '../tag/nginx.conf'
 			}
 		});
 		var app = servers.express;
-		app.use(require('../version/'));
+		app.use(require('../tag/'));
 
 		app.get('*', function(req, res, next) {
 			debug("app received GET");
@@ -51,16 +51,16 @@ describe("Per-domain version", function suite() {
 		getCounterA = 0;
 		return runner.get(uri + '/a')
 		.then(function(res) {
-			res.headers.should.have.property('x-cache-version', '1');
+			res.headers.should.have.property('x-cache-tag', 'global=0');
 			return runner.post(uri + '/b', 'postbody');
 		}).then(function() {
 			return runner.get(uri + '/a');
 		}).then(function(res) {
 			res.body.should.have.property('value', 'a');
-			res.headers.should.have.property('x-cache-version', '2');
+			res.headers.should.have.property('x-cache-tag', 'global=1');
 			return runner.get(uri + '/a');
 		}).then(function(res) {
-			res.headers.should.have.property('x-cache-version', '2');
+			res.headers.should.have.property('x-cache-tag', 'global=1');
 			getCounterA.should.equal(2);
 		});
 	});

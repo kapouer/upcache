@@ -4,7 +4,7 @@
   "description": "cache protocols implementations between proxy and application",
   "main": "index.js",
   "scripts": {
-    "test": "mocha test/version.js"
+    "test": "mocha"
   },
   "repository": {
     "type": "git",

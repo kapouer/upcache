@@ -1,71 +1,72 @@
 cache-protocols
 ===============
 
-Protocols defining how an application should exchange headers with
-a proxy in order to be able to maintain an up-to-date cache.
+This module proposes a working implementation of an effective proxy cache,
+with both a passive (using normalization functions) Vary implementation, and
+an active (invalidable by the application) cache mecanism.
 
 
-Architecture
-------------
+Software stack
+--------------
 
-An HTTP 1.1 proxy with cache abilities, proxying an upstream application.
+The implementation here uses:
 
-The implementations shown here use
-
-- nginx
-- lua as configuration language
-- shared memory as lookup cache
-- remote memcached as data cache, optional, and also replaceable by a non-volatile store
-- a Node.js/express application
+- nginx with lua and some modules (see below for installation)
+- a shared memory dict (lua) storing url variants
+- a remote cache backend (memcached) used by srcache to store responses
+- an upstream application (Node.js/express)
 
 
-### Protocol
+Principle
+---------
 
-A protocol defines the function checking request headers against constraints
-returned by the application, and the response and request headers exchanged
-between application and proxy.
+The application interacts with downstream proxies using HTTP headers.
 
-### Caches
+The main way to do so is using Vary response headers to instruct proxies how to
+build future cache key requests for a given url.
 
-There are two caches, the variants cache and the data cache:
+The proxy is configured with customizable normalization functions for request
+headers (with sane defaults for the most common ones), so that the request key
+does not vary too much to be useful.
 
-- one for storing urls and their variants (in json strings)
-- one for storing the data for each key
+On top of that, there is a need for a mecanism that allows the application to
+tag url and invalidate all url for a given tag at once:
 
-### Fetch
+- application tags a resource by replying with a `X-Cache-Tag: mytag=val` response
+header - this implies `Vary: X-Cache-Tag` so it does not need to be added.
+- proxy stores `mytag` as a variant tag key for that url (same as in Vary field)
+and stores that value for that tag.
+- the normalization function for that variant returns `mytag=curval`
+- when the application sends a `X-Cache-Tag: mytag=newval` in a response
+header, the proxy changes that tag value (typically by incrementing it)
+- thus all url using that variant header will be invalidated at once
 
-First it looks up the known variants of the url, each variant defines a function
-name (the one of the protocol involved) and stores a list of strings which define
-how the url varies. If `function(url, headers, constraints)` return true,
-the constraints are used to build the cache key.
-
-Second it fetches the data from the second cache using the key built previously.
-
-### Store
-
-In case of cacheable response, the cache-protocol response headers returned by
-the application are stored into the variants cache, and the resulting key
-(built similarly to the Fetch phase, without the function call) is used to
-store the data into the data cache.
+The variants cache and the memcached backend are both LRU caches, so they don't
+actually need to be purged - requests keys just need to be changed.
 
 
 Requirements
 ------------
 
-The implementations defined here require:
+The implementations defined use
 
 - a Node.js application
 - nginx >= 1.8
 - lua-nginx-module
+- set-misc-nginx-module  
+  https://github.com/openresty/set-misc-nginx-module
+- headers-more-nginx-module  
+  https://github.com/openresty/headers-more-nginx-module
+- lua-messagepack  
+  https://github.com/fperrad/lua-MessagePack/
+
+And optionally
+
 - lua-nginx-memcached
 - srcache-nginx-module  
-  https://github.com/openresty/srcache-nginx-module/archive/v0.30.tar.gz
+  https://github.com/openresty/srcache-nginx-module
 - memc-nginx-module  
-  https://github.com/openresty/memc-nginx-module/archive/v0.16.tar.gz
-- set-misc-nginx-module  
-  https://github.com/openresty/set-misc-nginx-module/archive/v0.30.tar.gz
-- headers-more-nginx-module  
-  https://github.com/openresty/headers-more-nginx-module/archive/v0.30rc1.tar.gz
+  https://github.com/openresty/memc-nginx-module
 - a memcached backend
 
 Each implementation comes in two parts:
@@ -79,7 +80,7 @@ Each implementation comes in two parts:
 Installation
 ------------
 
-### nginx
+### nginx & lua
 
 nginx <= 1.9.10
 
@@ -93,6 +94,8 @@ apt-get source nginx = 1.9.10
 * Extract [openresty's set-misc source](https://github.com/openresty/set-misc-nginx-module/archive/v0.30.tar.gz) to nginx/debian/modules/set-misc-nginx-module
 
 * headers-more-nginx-module is already available in nginx-extra debian package
+
+* lua-messagepack is available as a debian package
 
 To build nginx-extra debian package with those two modules, simply append
 those two flags to extras_configure_flags in debian/rules:
@@ -115,4 +118,19 @@ systemctl enable memcached
 
 To dump memcached:
 memcdump --servers=127.0.0.1:11211
+
+
+Testing
+-------
+
+`mocha` will launch user instances of memcached, nginx, and express app and run
+full integration tests.
+
+The test suite itself is a great development tool.
+
+
+License
+-------
+
+See LICENSE file.
 
