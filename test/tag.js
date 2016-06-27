@@ -7,8 +7,15 @@ var port = 3000;
 
 describe("Tag", function suite() {
 	var servers;
-	var uri = 'http://localhost:' + port;
-	var getCounterA;
+	var host = 'http://localhost:' + port;
+	var testPath = '/having-tag-test';
+	var counters = {};
+
+	function count(uri) {
+		var counter = counters[uri];
+		if (counter == null) counter = counters[uri] = 0;
+		return counters[uri]++;
+	}
 
 	before(function(done) {
 		servers = runner({
@@ -26,9 +33,17 @@ describe("Tag", function suite() {
 		var app = servers.express;
 		app.use(require('../tag/'));
 
-		app.get('*', function(req, res, next) {
-			debug("app received GET");
-			getCounterA++;
+		app.get('/a', function(req, res, next) {
+			count(req.path);
+			res.set('X-Cache-Tag', 'global');
+			res.send({
+				value: (req.path || '/').substring(1),
+				date: new Date()
+			});
+		});
+		app.get('/having-tag-test', function(req, res, next) {
+			count(req.path);
+			res.set('X-Cache-Tag', 'test');
 			res.send({
 				value: (req.path || '/').substring(1),
 				date: new Date()
@@ -36,7 +51,6 @@ describe("Tag", function suite() {
 		});
 
 		app.post('*', function(req, res, next) {
-			debug("app received POST");
 			res.send('OK');
 		});
 		done();
@@ -47,21 +61,28 @@ describe("Tag", function suite() {
 		done();
 	});
 
-	it("should increase version of all resources when sending a POST", function() {
-		getCounterA = 0;
-		return runner.get(uri + '/a')
+	it("should cache a url", function() {
+		return runner.get(host + testPath).then(function(res) {
+			res.headers.should.have.property('x-cache-tag', 'test');
+			return runner.get(host + testPath);
+		}).then(function(res) {
+			res.headers.should.have.property('x-cache-tag', 'test');
+			count('/having-tag-test').should.equal(1);
+		});
+	});
+
+	it("should invalidate a tag using a post", function() {
+		var firstDate;
+		return runner.get(host + testPath)
 		.then(function(res) {
-			res.headers.should.have.property('x-cache-tag', 'global=0');
-			return runner.post(uri + '/b', 'postbody');
-		}).then(function() {
-			return runner.get(uri + '/a');
+			firstDate = Date.parse(res.body.date);
+			res.headers.should.have.property('x-cache-tag', 'test');
+			return runner.post(host + testPath, 'postbody');
 		}).then(function(res) {
-			res.body.should.have.property('value', 'a');
-			res.headers.should.have.property('x-cache-tag', 'global=1');
-			return runner.get(uri + '/a');
+			res.headers.should.have.property('x-cache-tag', '+test');
+			return runner.get(host + testPath);
 		}).then(function(res) {
-			res.headers.should.have.property('x-cache-tag', 'global=1');
-			getCounterA.should.equal(2);
+			Date.parse(res.body.date).should.be.greaterThan(firstDate);
 		});
 	});
 });

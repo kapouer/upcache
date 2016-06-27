@@ -2,15 +2,15 @@ var onHeaders = require('on-headers');
 
 module.exports = cacheTagMw;
 
-var globalVersion = 0;
-
 function cacheTagMw(req, res, next) {
 	onHeaders(res, function() {
 		if (res.statusCode >= 200 && res.statusCode < 300) {
-			if (req.method != "GET") {
-				globalVersion++;
-			}
-			res.set('X-Cache-Tag', 'global=' + globalVersion);
+			var tags = req.get('X-Cache-Tag');
+			tags = tags && tags.split(',') || [];
+			if (req.method != "GET") tags = tags.map(function(tag) {
+				return '+' + tag;
+			});
+			if (tags.length) res.set('X-Cache-Tag', tags);
 		}
 	});
 	next();

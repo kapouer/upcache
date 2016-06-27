@@ -6,6 +6,8 @@ local format = string.format
 
 module._VERSION = '0.0.1'
 
+local HEADER = "X-Cache-Tag"
+
 local function explode(str, pat)
 	local t = {}  -- NOTE: use {n = 0} in Lua-5.0
 	local fpat = "(.-)" .. pat
@@ -30,14 +32,14 @@ local function build_key(key, variants)
 	local tags = variants.tags
 	if tags == nil then	return key end
 	local nkey = key
-	local tagsDict = module.tags
-	local value
+	local mtags = module.tags
+	local tagval
 	for i, tag in pairs(tags) do
-		value = tagsDict[tag]
-		if value ~= nil then
-			nkey = tag .. '=' .. value .. ' ' .. nkey
-		end
+		tagval = mtags[tag]
+		if tagval == nil then tagval = 0 end
+		nkey = tag .. '=' .. tagval .. ' ' .. nkey
 	end
+	ngx.req.set_header(HEADER, table.concat(tags, ','))
 	return nkey
 end
 
@@ -59,30 +61,26 @@ local function update_variants(key, what, data)
 	return vars
 end
 
-local function get_tags(header)
-	local tags = {}
-	if header == nil then return tags end
-	local values = explode(header, ',')
-	for i, value in pairs(values) do
-		local pair = explode(value, '=')
-		tags[pair[1]] = pair[2]
-	end
-	return tags
-end
-
-
 function module.get(key)
 	return build_key(key, get_variants(key))
 end
 
 function module.set(key, headers)
-	local tags = get_tags(headers["X-Cache-Tag"])
-	local taglist = {};
-	for tag, value in pairs(tags) do
-		table.insert(taglist, tag)
-		module.tags[tag] = value
+	local header = headers[HEADER];
+	if header == nil then return end
+	local tags = explode(header, ',')
+	local mtags = module.tags
+	local tagval
+	for i, tag in pairs(tags) do
+		if (tag:sub(1,1) == '+') then
+			tag = tag:sub(2)
+			tags[i] = tag
+			tagval = mtags[tag]
+			if tagval == nil then tagval = 0 end
+			mtags[tag] = tagval + 1
+		end
 	end
-	local variants = update_variants(key, 'tags', taglist)
+	local variants = update_variants(key, 'tags', tags)
 	return build_key(key, variants)
 end
 

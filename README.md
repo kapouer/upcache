@@ -32,14 +32,17 @@ does not vary too much to be useful.
 On top of that, there is a need for a mecanism that allows the application to
 tag url and invalidate all url for a given tag at once:
 
-- application tags a resource by replying with a `X-Cache-Tag: mytag=val` response
+- application tags a resource by replying with a `X-Cache-Tag: mytag` response
 header - this implies `Vary: X-Cache-Tag` so it does not need to be added.
-- proxy stores `mytag` as a variant tag key for that url (same as in Vary field)
-and stores that value for that tag.
+- proxy stores `mytag` as a sub-variant tag key for that url, and stores that
+value for that tag. This is like a `Vary: mytag` where `mytag` actual value is
+stored internally.
 - the normalization function for that variant returns `mytag=curval`
-- when the application sends a `X-Cache-Tag: mytag=newval` in a response
+- when the application sends a `X-Cache-Tag: +mytag` in a response
 header, the proxy changes that tag value (typically by incrementing it)
 - thus all url using that variant header will be invalidated at once
+- the order of processing is not important (hence the choice of a commutative
+update operation).
 
 The variants cache and the memcached backend are both LRU caches, so they don't
 actually need to be purged - requests keys just need to be changed.
