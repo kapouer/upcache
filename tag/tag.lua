@@ -29,9 +29,14 @@ local function build_key(key, variants)
 	if variants == nil then return key end
 	local tags = variants.tags
 	if tags == nil then	return key end
-	local nkey = key;
-	for tag, value in pairs(tags) do
-		nkey = tag .. '=' .. value .. ' ' .. nkey
+	local nkey = key
+	local tagsDict = module.tags
+	local value
+	for i, tag in pairs(tags) do
+		value = tagsDict[tag]
+		if value ~= nil then
+			nkey = tag .. '=' .. value .. ' ' .. nkey
+		end
 	end
 	return nkey
 end
@@ -72,10 +77,12 @@ end
 
 function module.set(key, headers)
 	local tags = get_tags(headers["X-Cache-Tag"])
+	local taglist = {};
 	for tag, value in pairs(tags) do
+		table.insert(taglist, tag)
 		module.tags[tag] = value
 	end
-	local variants = update_variants(key, 'tags', tags)
+	local variants = update_variants(key, 'tags', taglist)
 	return build_key(key, variants)
 end
 
