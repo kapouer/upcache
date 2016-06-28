@@ -8,25 +8,6 @@ module._VERSION = '0.0.1'
 
 local HEADER = "X-Cache-Tag"
 
-local function explode(str, pat)
-	local t = {}  -- NOTE: use {n = 0} in Lua-5.0
-	local fpat = "(.-)" .. pat
-	local last_end = 1
-	local s, e, cap = str:find(fpat, 1)
-	while s do
-		if s ~= 1 or cap ~= "" then
-			table.insert(t,cap)
-		end
-		last_end = e+1
-		s, e, cap = str:find(fpat, last_end)
-	end
-	if last_end <= #str then
-		cap = str:sub(last_end)
-		table.insert(t, cap)
-	end
-	return t
-end
-
 local function build_key(key, variants)
 	if variants == nil then return key end
 	local tags = variants.tags
@@ -66,9 +47,11 @@ function module.get(key)
 end
 
 function module.set(key, headers)
-	local header = headers[HEADER];
-	if header == nil then return end
-	local tags = explode(header, ',')
+	local tags = headers[HEADER];
+	if tags == nil then return end
+	if type(tags) == "string" then
+		tags = {tags}
+	end
 	local mtags = module.tags
 	local tagval
 	for i, tag in pairs(tags) do
