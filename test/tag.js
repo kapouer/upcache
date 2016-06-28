@@ -41,7 +41,8 @@ describe("Tag", function suite() {
 				date: new Date()
 			});
 		});
-		app.get('/having-tag-test', function(req, res, next) {
+
+		app.get(testPath, function(req, res, next) {
 			count(req.path);
 			res.set('X-Cache-Tag', 'test');
 			res.send({
@@ -50,9 +51,15 @@ describe("Tag", function suite() {
 			});
 		});
 
-		app.post('*', function(req, res, next) {
+		app.post(testPath, function(req, res, next) {
 			res.send('OK');
 		});
+
+		app.post("/a", function(req, res, next) {
+			res.set('X-Cache-Tag', 'test');
+			res.send('OK');
+		});
+
 		done();
 	});
 
@@ -78,6 +85,21 @@ describe("Tag", function suite() {
 			firstDate = Date.parse(res.body.date);
 			res.headers.should.have.property('x-cache-tag', 'test');
 			return runner.post(host + testPath, 'postbody');
+		}).then(function(res) {
+			res.headers.should.have.property('x-cache-tag', '+test');
+			return runner.get(host + testPath);
+		}).then(function(res) {
+			Date.parse(res.body.date).should.be.greaterThan(firstDate);
+		});
+	});
+
+	it("should invalidate a tag using a post to a different path", function() {
+		var firstDate;
+		return runner.get(host + testPath)
+		.then(function(res) {
+			firstDate = Date.parse(res.body.date);
+			res.headers.should.have.property('x-cache-tag', 'test');
+			return runner.post(host + "/a", 'postbody');
 		}).then(function(res) {
 			res.headers.should.have.property('x-cache-tag', '+test');
 			return runner.get(host + testPath);
