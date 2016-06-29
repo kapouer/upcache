@@ -30,11 +30,11 @@ module.exports = function(opts) {
 		if (opts.express) conf = conf.replace(/\$express/g, opts.express.port);
 		conf = conf.replace(/\$nginx/g, opts.nginx.port);
 
-		fs.writeFileSync('./test.conf', conf);
+		fs.writeFileSync('../test/temp.conf', conf);
 
 		obj.nginx = spawn('/usr/sbin/nginx', [
 			'-p', __dirname,
-			'-c', './nginx.conf'
+			'-c', './index.conf'
 		]);
 		obj.nginx.stdout.pipe(process.stdout);
 		obj.nginx.stderr.pipe(new FilterPipe(function(str) {

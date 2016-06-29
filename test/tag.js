@@ -27,7 +27,7 @@ describe("Tag", function suite() {
 			},
 			nginx: {
 				port: port,
-				conf: '../tag/nginx.conf'
+				conf: '../tag/index.conf'
 			}
 		});
 		var app = servers.express;
