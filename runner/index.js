@@ -75,7 +75,11 @@ module.exports.get = function(uri) {
 				body += chunk;
 			});
 			res.on('end', () => {
-				res.body = JSON.parse(body);
+				try {
+					res.body = JSON.parse(body);
+				} catch(ex) {
+					res.body = body;
+				}
 				resolve(res);
 			});
 		}).once('error', function(err) {

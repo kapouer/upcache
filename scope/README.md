@@ -4,64 +4,141 @@ Json Web Token Scopes protocol
 Using a shared private key between the application and the proxy,
 it is possible to define scopes-based cache keys.
 
+
+Install
+-------
+
+```
+luarocks install jwt
+npm install jsonwebtoken cookie
+```
+
+
+What are scopes ?
+-----------------
+
 Scopes are a common way to define fine-grain accesses to an API, see
 for example:
 https://auth0.com/blog/2014/12/02/using-json-web-tokens-as-api-keys/
 
-jwt.scopes = ["user 25", "webmaster"]
 
-or even finer scopes:
+Usage
+-----
 
-jwt.scopes = {
-	"user 25": { read: true, modify: true },
-	"webmaster": { read: true, write: true }
-};
+```
+var scope = require('scope')({
+	publicKey: <rsa public key>,
+	privateKey: <rsa private key>,
+	issuer: the application name,
+	maxAge: age in seconds
+});
 
-Fetching any url from cache will typically depend on the scopes being granted,
-and one can map HTTP methods to what is granted by the scope:
+app.post("/login", function(req, res, next) {
+	dblogin(req.body.login, req.body.password).then(function(user) {
+		scope.login(res, {
+			[`user-${user.id}`]: true
+			bookWriter: {
+				write: true
+			},
+			bookReader: {
+				read: true
+			}
+		});
+	});
+});
 
-read: GET
-modify/change/write: PUT, PATCH
-create/write: POST
-delete/write: DELETE
+app.get("/logout", function(req, res, next) {
+	scope.logout(res);
+});
 
+app.get('/api/user', scope.restrict("&user-*", "admin"), myMidleware);
+```
 
-Why JWT ?
----------
-
-Because it is easy to verify signature in proxy or in application, we have
-implementations in all languages, in particular in lua/nodejs:
-
-https://github.com/x25/luajwt
-and jsonwebtoken npm module.
-
-
-Why scopes ?
+Restrictions
 ------------
 
-Because they're announced by their bearer, and not an opaque grant mecanism -
-which i great for cache key construction.
+A restriction is an alphanumeric string.
+
+Multiple permissions can be given as arguments,
+in which case the bearer can match one of them or none.
+
+A boolean restriction `true` means 
+
+A restriction can be made mandatory by prefixing it with a `&`.
+
+A restriction can contain a wildcard `*` which must match at least one char.
+
+The above example with more control
+```
+app.get("/api/user", function(req, res, next) {
+	var restrictions = ["permA", "permB"];
+	if (scope.allowed(req, restrictions)) {
+		scope.grant(res, restrictions);
+		next();
+	} else {
+		scope.reject(res);
+	}
+}, appMw);
+```
+
+There is also a convenient shorthand for defining restrictions by actions
+```
+app.all('/api/books', scope.restrict(
+	"admin", {
+		read: "bookReader",
+		write: "bookWriter"
+	}, {
+		del: "cleaner"
+	}
+), appMw);
+```
 
 
-Store
------
+Bearer scopes
+-------------
 
-The application must use the cookie named "Bearer" to store the jsonwebtoken,
-and it must send a response with an HTTP header
-X-Cache-Scope: webmaster
-X-Cache-Scope: user 25
-X-Cache-Scope-Limit: 2
+Actions are read, add, save, del; and write is a shorthand for add+save+del.
 
-Only scopes giving read access are listed here.
-
-** the cache key depends on upstream response **  // CHECK IF POSSIBLE
-
-store key = granted scopes + url
-store variant = url: granted scopes
+User scopes is an object with permissions as keys and an object mapping actions
+to booleans as value.
+That object can be replaced by boolean true as a shorthand for
+`{ read: true, write: true }`.
 
 
-Fetch
------
+Cache protocol
+--------------
+
+The caching proxy must be able to build request keys out of a request url
+and scopes read from a JWT.
+
+The application is responsible (in its HTTP response headers) to provide two
+pieces of information to the proxy:
+
+- X-Cache-Restrictions  
+  a list of restrictions as defined above
+
+- X-Cache-Bearer (optional, defaults to cookie_bearer)  
+  this can be `http_bearer`, or `cookie_bearer`, following nginx variable names.
+
+Examples where application grants access to bearers:
+- with scope A or scope B (but not none): `A,B`
+- with optional scope A and mandatory scope B: `A,+B`
+- with scope A and scope B: `+A,+B`
+- with scope /root/* or scope /other/*: `/root/*,/other/*`
+- with some scope required: `*`
+
+
+The cache is not responsible for granting or denying access: it must just knows
+how to build a cache key given a bearer and those rules.
+
+For the sake of simplicity, this implementation is not perfect: there is no way
+to tell the cache to not build a key with A and B scopes (if the bearer has them)
+even if the application doesn't require both.
+
+
+Algorithm
+---------
+
 
 Upon request, the lookup will return zero, one, or several lists of scopes.
 A successful variant lookup matches all these conditions:
@@ -74,4 +151,37 @@ A successful variant lookup matches all these conditions:
   The current request cannot claim more scopes or else it could get a different
   result because the variant scopes could be greater than the scopes used
   for lookup.
+
+url restrictions are stored in a shared dict:
+```
+scopes[url] = {
+	list: ["?webmaster", "user %s+"],
+	bearer: "cookie_bearer"
+}
+```
+
+A request key is then easy to build
+```
+local scope = scopes[uri]
+local bearer = ngx.var[scope.bearer or cookie_bearer]
+local jwt  = require 'jwt'
+local crypto = pcall (require, 'crypto') and require 'crypto'
+local publicKey = handshakes[host]
+local token, msg = jwt.decode(bearer, {keys = {public = publicKey}})
+if token ~= nil then
+	
+end
+
+```
+
+
+Optional rsa handshake
+----------------------
+
+In a future version, if the proxy doesn't have the public RSA key for jwt
+payload verification, it adds this request header as soon as possible
+- X-Cache-Bearer-Handshake: 1
+
+The application is responsible for sending back in the response this header:
+- X-Cache-Bearer-Handshake: MFwwDQY...
 
