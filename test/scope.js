@@ -189,7 +189,7 @@ describe("Scope", function suite() {
 		});
 	});
 
-	it("should log in and get read access to a url with proxy", function() {
+	it("should log in and get read access to a url and hit the cache with proxy", function() {
 		var headers = {};
 		var req = {
 			headers: headers,
@@ -203,9 +203,11 @@ describe("Scope", function suite() {
 			return runner.get(req);
 		}).then(function(res) {
 			res.headers.should.have.property('x-cache-restriction', 'bookReader');
+			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
 			return runner.get(req);
 		}).then(function(res) {
+			res.statusCode.should.equal(200);
 			// because it should be a cache hit
 			count(req).should.equal(1);
 		});
