@@ -111,7 +111,7 @@ function getAction(method) {
 
 function initScopes(req) {
 	if (req.scopes) return req.scopes;
-	if (!req.cookies) req.cookies = cookie.parse(req.headers.cookie) || {};
+	if (!req.cookies) req.cookies = cookie.parse(req.headers.cookie || "") || {};
 
 	var bearer = req.cookies.bearer;
 	if (!bearer) {
