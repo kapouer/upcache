@@ -1,3 +1,7 @@
+--package.path = package.path .. ";/usr/local/share/lua/5.1/"
+
+local jwt = require 'resty.jwt'
+local json = require 'json'
 local mp = require 'MessagePack'
 local module = {}
 local log = ngx.log
@@ -6,65 +10,116 @@ local format = string.format
 
 module._VERSION = '0.0.1'
 
-local HEADER = "X-Cache-Tag"
+local HEADER_R = "X-Cache-Restriction"
+local HEADER_P = "X-Cache-Key-Handshake"
 
-local function build_key(key, variants)
-	if variants == nil then return key end
-	local tags = variants.tags
-	if tags == nil then	return key end
-	local nkey = key
-	local mtags = module.tags
-	local tagval
-	for i, tag in pairs(tags) do
-		tagval = mtags[tag]
-		if tagval == nil then tagval = 0 end
-		nkey = tag .. '=' .. tagval .. ' ' .. nkey
+local function authorize(restrictions, scopes)
+	log(ERR, "authorize from scopes ", json.encode(scopes))
+	local failure = false
+	local grant, scope, mandatory
+	local grants = {}
+	if restrictions == nil then return false end
+	for i, label in pairs(restrictions) do
+		grant = label
+		if label == "*" then
+			table.insert(grants, grant)
+			goto continue
+		end
+		if scopes == nil then goto continue end
+		log(ERR, "check scopes against ", grant, json.encode(scopes))
+		mandatory = false
+		if label:sub(1, 1) == "&" then
+			mandatory = true
+			label = label:sub(2)
+		end
+		regstr = label:gsub('*', '.*')
+		if regstr:len() ~= label:len() then
+			regstr = "^" .. regstr .. "$"
+			for scope, scopeObj in pairs(scopes) do
+				if scopeObj == true or scopeObj ~= nil and scopeObj.read == true then
+					if regstr:match(scope) then
+						table.insert(grants, grant)
+						goto continue
+					end
+				end
+			end
+		else
+			log(ERR, "scopes are ", json.encode(scopes), label)
+			scope = scopes[label]
+			if scope == true or scope ~= nil and scope.read == true then
+				table.insert(grants, grant)
+				goto continue
+			end
+		end
+		if mandatory then
+			failure = true
+			break
+		end
+		::continue::
 	end
-	ngx.req.set_header(HEADER, table.concat(tags, ','))
-	return nkey
+	if failure == true or #grants == 0 then
+		return false
+	end
+	return grants
 end
 
-local function get_variants(key)
-	local pac = module.variants[key]
+local function build_key(key, restrictions, scopes)
+	-- TODO make sure grants are sorted
+	local grants = authorize(restrictions, scopes)
+	if grants == false then
+		return key
+	end
+	key = table.concat(grants, ',') .. ' ' .. key
+	log(ERR, "Grants Key '", key, "'")
+	return key
+end
+
+local function get_restrictions(key)
+	local pac = module.restrictions[key]
 	if pac == nil then
 		return nil
 	end
 	return mp.unpack(pac)
 end
 
-local function update_variants(key, what, data)
-	local vars = get_variants(key)
-	if vars == nil then
-		vars = {}
-	end
-	vars[what] = data
-	module.variants[key] = mp.pack(vars)
-	return vars
+local function update_restrictions(key, data)
+	module.restrictions[key] = mp.pack(data)
+	return data
 end
 
-function module.get(key)
-	return build_key(key, get_variants(key))
+local function get_scopes(host, bearer)
+	if bearer == nil then return nil end
+	local publicKey = module.publicKeys[host]
+	if publicKey == nil then
+		return nil
+	end
+	local jwt_obj = jwt:load_jwt(bearer)
+	local verified = jwt:verify_jwt_obj(publicKey, jwt_obj)
+	if jwt_obj == nil or verified == false then
+		log(ERR, "no valid jwt", json.encode(jwt_obj))
+		return nil
+	end
+	if jwt_obj.payload then return jwt_obj.payload.scopes
+	else return nil
+	end
 end
 
-function module.set(key, headers)
-	local tags = headers[HEADER];
-	if tags == nil then return end
-	if type(tags) == "string" then
-		tags = {tags}
+function module.get(key, vars)
+	return build_key(key, get_restrictions(key), get_scopes(vars.host, vars.cookie_bearer))
+end
+
+function module.set(key, vars, headers)
+	local pub = headers[HEADER_P]
+	if pub ~= nil then
+		module.publicKeys[vars.host] = ngx.unescape_uri(pub)
 	end
-	local mtags = module.tags
-	local tagval
-	for i, tag in pairs(tags) do
-		if (tag:sub(1,1) == '+') then
-			tag = tag:sub(2)
-			tags[i] = tag
-			tagval = mtags[tag]
-			if tagval == nil then tagval = 0 end
-			mtags[tag] = tagval + 1
-		end
+	local restrictions = headers[HEADER_R];
+	if restrictions == nil then return end
+	if type(restrictions) == "string" then
+		restrictions = {restrictions}
 	end
-	local variants = update_variants(key, 'tags', tags)
-	return build_key(key, variants)
+	update_restrictions(key, restrictions)
+	return build_key(key, restrictions, get_scopes(vars.host, vars.cookie_bearer))
 end
 
 return module;

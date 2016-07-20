@@ -9,7 +9,8 @@ Install
 -------
 
 ```
-luarocks install jwt
+luarocks install lua-resty-jwt
+luarocks install lua-resty-string
 npm install jsonwebtoken cookie
 ```
 
@@ -71,10 +72,8 @@ A restriction can contain a wildcard `*` which must match at least one char.
 The above example with more control
 ```
 app.get("/api/user", function(req, res, next) {
-	var restrictions = ["permA", "permB"];
-	if (scope.allowed(req, restrictions)) {
-		scope.grant(res, restrictions);
-		next();
+	if (scope.allowed(req, "permA", "permB")) {
+		scope.headers(res);
 	} else {
 		scope.reject(res);
 	}
@@ -93,6 +92,15 @@ app.all('/api/books', scope.restrict(
 ), appMw);
 ```
 
+In which case a simple wildcard restriction letting everyone read access is
+often useful:
+
+```
+app.all('/api/items', scope.restrict({
+	read: "*", // if no restriction is given, it effectively blocks access
+	write: "itemWriter"
+}), appMw);
+```
 
 Bearer scopes
 -------------
@@ -117,6 +125,9 @@ pieces of information to the proxy:
 - X-Cache-Restrictions  
   a list of restrictions as defined above
 
+- X-Cache-Grants  
+  the actual list of granted bearer scopes (by matching restrictions)
+
 - X-Cache-Bearer (optional, defaults to cookie_bearer)  
   this can be `http_bearer`, or `cookie_bearer`, following nginx variable names.
 
@@ -125,7 +136,7 @@ Examples where application grants access to bearers:
 - with optional scope A and mandatory scope B: `A,+B`
 - with scope A and scope B: `+A,+B`
 - with scope /root/* or scope /other/*: `/root/*,/other/*`
-- with some scope required: `*`
+- any scope: `*`
 
 
 The cache is not responsible for granting or denying access: it must just knows
@@ -175,13 +186,16 @@ end
 ```
 
 
-Optional rsa handshake
-----------------------
+Public key handshake
+--------------------
 
-In a future version, if the proxy doesn't have the public RSA key for jwt
-payload verification, it adds this request header as soon as possible
-- X-Cache-Bearer-Handshake: 1
+If the proxy doesn't have the public RSA key for jwt payload verification of the
+current domain, it adds this request header as soon as possible
+- X-Cache-Key-Handshake: 1
 
 The application is responsible for sending back in the response this header:
-- X-Cache-Bearer-Handshake: MFwwDQY...
+- X-Cache-Key-Handshake: MFwwDQY...
+
+The application can send that header in a response at any time, to update the
+proxy copy of the public key after a change (the js scope lib deals with that).
 
