@@ -90,15 +90,15 @@ module.exports.get = function(uri) {
 
 module.exports.post = function(uri, data) {
 	return new Promise(function(resolve, reject) {
-		var uriObj = URL.parse(uri);
-		uriObj.method = 'POST';
-		var req = http.request(uriObj, function(res) {
+		if (typeof uri == "string") uri = URL.parse(uri);
+		uri.method = 'POST';
+		var req = http.request(uri, function(res) {
 			resolve(res);
 		});
 		req.once('error', function(err) {
 			reject(err);
 		});
-		req.write(data);
+		if (data) req.write(data);
 		req.end();
 	}).catch(function(err) {
 		console.error(err);
