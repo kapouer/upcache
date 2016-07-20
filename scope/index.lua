@@ -87,12 +87,8 @@ local function update_restrictions(key, data)
 	return data
 end
 
-local function get_scopes(host, bearer)
+local function get_scopes(publicKey, bearer)
 	if bearer == nil then return nil end
-	local publicKey = module.publicKeys[host]
-	if publicKey == nil then
-		return nil
-	end
 	local jwt_obj = jwt:load_jwt(bearer)
 	local verified = jwt:verify_jwt_obj(publicKey, jwt_obj)
 	if jwt_obj == nil or verified == false then
@@ -105,13 +101,26 @@ local function get_scopes(host, bearer)
 end
 
 function module.get(key, vars)
-	return build_key(key, get_restrictions(key), get_scopes(vars.host, vars.cookie_bearer))
+	local publicKey = module.publicKeys[vars.host]
+	if publicKey == nil then
+		ngx.req.set_header(HEADER_P, "1")
+		return key
+	end
+	return build_key(key, get_restrictions(key), get_scopes(publicKey, vars.cookie_bearer))
 end
 
 function module.set(key, vars, headers)
-	local pub = headers[HEADER_P]
-	if pub ~= nil then
-		module.publicKeys[vars.host] = ngx.unescape_uri(pub)
+	local publicKey = headers[HEADER_P]
+	local host = vars.host
+	if publicKey ~= nil then
+		publicKey = ngx.unescape_uri(publicKey)
+		module.publicKeys[host] = publicKey
+	else
+		publicKey = module.publicKeys[host]
+	end
+	if publicKey == nil then
+		log(ERR, "missing public key for ", host)
+		return key
 	end
 	local restrictions = headers[HEADER_R];
 	if restrictions == nil then return end
@@ -119,7 +128,7 @@ function module.set(key, vars, headers)
 		restrictions = {restrictions}
 	end
 	update_restrictions(key, restrictions)
-	return build_key(key, restrictions, get_scopes(vars.host, vars.cookie_bearer))
+	return build_key(key, restrictions, get_scopes(publicKey, vars.cookie_bearer))
 end
 
 return module;
