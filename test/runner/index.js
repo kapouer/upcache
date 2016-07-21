@@ -54,21 +54,29 @@ module.exports = function(opts) {
 	return obj;
 };
 
-function close() {
+function close(cb) {
 	try {
 		fs.unlinkSync(tempFile);
 	} catch(ex) {}
+	var count = 0;
 	if (this.nginx) {
+		count++;
+		this.nginx.on('exit', done);
 		this.nginx.kill('SIGTERM');
 		delete this.nginx;
 	}
 	if (this.memcached) {
+		count++;
+		this.memcached.on('exit', done);
 		this.memcached.kill('SIGKILL');
 		delete this.memcached;
 	}
 	if (this.express) {
 		this.express.server.close();
 		delete this.express;
+	}
+	function done() {
+		if (--count) cb();
 	}
 }
 

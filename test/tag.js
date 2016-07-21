@@ -64,8 +64,7 @@ describe("Tag", function suite() {
 	});
 
 	after(function(done) {
-		servers.close();
-		done();
+		servers.close(done);
 	});
 
 	it("should cache a url", function() {

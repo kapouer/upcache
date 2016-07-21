@@ -92,8 +92,7 @@ describe("Scope", function suite() {
 	});
 
 	after(function(done) {
-		servers.close();
-		done();
+		servers.close(done);
 	});
 
 	beforeEach(function() {
