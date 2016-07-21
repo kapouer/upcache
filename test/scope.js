@@ -1,13 +1,13 @@
 var should = require('should');
 var fs = require('fs');
-var runner = require('../runner');
+var runner = require('./runner');
 var debug = require('debug')('scope');
 var Path = require('path');
 var URL = require('url');
 var cookie = require('cookie');
-var scope = require('../scope')({
-	privateKey: fs.readFileSync(Path.join(__dirname, 'private/private.pem')).toString(),
-	publicKey: fs.readFileSync(Path.join(__dirname, 'private/public.pem')).toString(),
+var scope = require('../src/scope')({
+	privateKey: fs.readFileSync(Path.join(__dirname, 'fixtures/private.pem')).toString(),
+	publicKey: fs.readFileSync(Path.join(__dirname, 'fixtures/public.pem')).toString(),
 	maxAge: 3600,
 	issuer: "test"
 });
@@ -16,8 +16,6 @@ var port = 3000;
 
 describe("Scope", function suite() {
 	var servers;
-	var expressPort = port + 1;
-	var host = 'http://localhost:' + expressPort;
 	var testPath = '/having-scope-test';
 	var testPathNotGranted = '/having-scope-not-granted-test';
 	var counters = {};
@@ -43,11 +41,11 @@ describe("Scope", function suite() {
 				port: port + 2
 			},
 			express: {
-				port: expressPort
+				port: port + 1
 			},
 			nginx: {
 				port: port,
-				conf: '../scope/index.conf'
+				conf: '../../src/scope.conf'
 			}
 		});
 		var app = servers.express;
@@ -104,7 +102,7 @@ describe("Scope", function suite() {
 
 	it("should get 401 when accessing a protected url without proxy", function() {
 		var req = {
-			port: expressPort,
+			port: port + 1,
 			path: testPath
 		};
 		return runner.get(req).then(function(res) {
@@ -117,16 +115,19 @@ describe("Scope", function suite() {
 		var headers = {};
 		var req = {
 			headers: headers,
-			port: expressPort,
+			port: port + 1,
 			path: testPath
 		};
-		return runner.post(host + '/login').then(function(res) {
+		return runner.post({
+			port: port + 1,
+			path: '/login'
+		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-cache-restriction', 'bookReader');
+			res.headers.should.have.property('x-cache-restriction', 'bookReader, bookSecond');
 			count(req).should.equal(1);
 		});
 	});
@@ -135,10 +136,13 @@ describe("Scope", function suite() {
 		var headers = {};
 		var req = {
 			headers: headers,
-			port: expressPort,
+			port: port + 1,
 			path: testPathNotGranted
 		};
-		return runner.post(host + '/login').then(function(res) {
+		return runner.post({
+			port: port + 1,
+			path: '/login'
+		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
@@ -151,20 +155,23 @@ describe("Scope", function suite() {
 
 	it("should log in, access, then log out, and be denied access without proxy", function() {
 		var headers = {};
-		return runner.post(host + '/login').then(function(res) {
+		return runner.post({
+			port: port + 1,
+			path: '/login'
+		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get({
 				headers: headers,
-				port: expressPort,
+				port: port + 1,
 				path: testPath
 			});
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			return runner.post({
 				headers: headers,
-				port: expressPort,
+				port: port + 1,
 				path: "/logout"
 			});
 		}).then(function(res) {
@@ -173,7 +180,7 @@ describe("Scope", function suite() {
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get({
 				headers: headers,
-				port: expressPort,
+				port: port + 1,
 				path: testPath
 			});
 		}).then(function(res) {
@@ -199,13 +206,16 @@ describe("Scope", function suite() {
 			port: port,
 			path: testPath
 		};
-		return runner.post(host + '/login').then(function(res) {
+		return runner.post({
+			port: port,
+			path: '/login'
+		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-cache-restriction', 'bookReader');
+			res.headers.should.have.property('x-cache-restriction', 'bookReader, bookSecond');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
 			return runner.get(req);
@@ -223,7 +233,10 @@ describe("Scope", function suite() {
 			port: port,
 			path: testPathNotGranted
 		};
-		return runner.post(host + '/login').then(function(res) {
+		return runner.post({
+			port: port,
+			path: '/login'
+		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
@@ -236,7 +249,10 @@ describe("Scope", function suite() {
 
 	it("should log in, access, then log out, and be denied access with proxy", function() {
 		var headers = {};
-		return runner.post(host + '/login').then(function(res) {
+		return runner.post({
+			port: port,
+			path: '/login'
+		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
@@ -275,7 +291,10 @@ describe("Scope", function suite() {
 			path: testPath
 		};
 		var firstDate;
-		return runner.post(host + '/login?scope=bookReader').then(function(res) {
+		return runner.post({
+			port: port,
+			path: '/login?scope=bookReader'
+		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
@@ -283,7 +302,10 @@ describe("Scope", function suite() {
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			firstDate = res.body.date;
-			return runner.post(host + '/login?scope=bookSecond');
+			return runner.post({
+				port: port,
+				path: '/login?scope=bookSecond'
+			});
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);

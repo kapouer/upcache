@@ -1,6 +1,6 @@
 var should = require('should');
 var fs = require('fs');
-var runner = require('../runner');
+var runner = require('./runner');
 var debug = require('debug')('tag');
 
 var port = 3000;
@@ -27,11 +27,11 @@ describe("Tag", function suite() {
 			},
 			nginx: {
 				port: port,
-				conf: '../tag/index.conf'
+				conf: '../../src/tag.conf'
 			}
 		});
 		var app = servers.express;
-		app.use(require('../tag/'));
+		app.use(require('../src/tag'));
 
 		app.get('/a', function(req, res, next) {
 			count(req.path);

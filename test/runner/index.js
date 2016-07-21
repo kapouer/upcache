@@ -8,6 +8,8 @@ var util = require('util');
 
 process.chdir(__dirname);
 
+var tempFile = './.temp.conf';
+
 module.exports = function(opts) {
 	var obj = {};
 	obj.close = close.bind(obj);
@@ -26,11 +28,12 @@ module.exports = function(opts) {
 	}
 	if (opts.nginx) {
 		var conf = fs.readFileSync(opts.nginx.conf).toString();
+		conf = conf.replace(/\$root/g, "../../");
 		if (opts.memcached) conf = conf.replace(/\$memcached/g, opts.memcached.port);
 		if (opts.express) conf = conf.replace(/\$express/g, opts.express.port);
 		conf = conf.replace(/\$nginx/g, opts.nginx.port);
 
-		fs.writeFileSync('../test/temp.conf', conf);
+		fs.writeFileSync(tempFile, conf);
 
 		obj.nginx = spawn('/usr/sbin/nginx', [
 			'-p', __dirname,
@@ -52,6 +55,9 @@ module.exports = function(opts) {
 };
 
 function close() {
+	try {
+		fs.unlinkSync(tempFile);
+	} catch(ex) {}
 	if (this.nginx) {
 		this.nginx.kill('SIGTERM');
 		delete this.nginx;

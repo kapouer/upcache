@@ -1,0 +1,13 @@
+## Debug mode
+- control logs from nodejs' DEBUG env var
+- nginx conf do not prune application headers
+- and computed cache keys are added in X-Cache-Key
+
+## More modular
+- ability to setup whole cache by adding a single line
+
+## rsa key renewal transition
+- existing valid jwt must still be verifiable
+- scope.js must be able to generate and cache rsa key every x seconds
+
+
