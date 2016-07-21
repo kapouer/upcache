@@ -1,27 +1,31 @@
-var onHeaders = require('on-headers');
+var debug = require('debug')('tag');
 
-module.exports = cacheTagMw;
+var headerTag = 'X-Cache-Tag';
 
-// TODO
-// app.get('/mypage', cache.tag('zoneA'), mw)
-// app.get('/mysection/:myparam'), cache.tag(':myparam'), mw)
+module.exports = function() {
+	var tags = Array.from(arguments);
+	var tagsMap = {};
+	tags.forEach(tag => tagsMap[tag] = true);
 
-function cacheTagMw(req, res, next) {
-	onHeaders(res, function() {
-		if (res.statusCode >= 200 && res.statusCode < 300) {
-			var tags = req.get('X-Cache-Tag');
-			tags = tags && tags.split(',') || [];
-			var rtags = res._headers['x-cache-tag'];
-			(rtags && rtags.split(',') || []).forEach(function(tag) {
-				if (!~tags.indexOf(tag)) tags.push(tag);
-			});
+	return function tagMw(req, res, next) {
+		debug("route has tags", tags);
+		var reqTags = req.get(headerTag);
+		var resTags = [];
+		if (reqTags) reqTags.split(',').forEach(function(tag) {
+			tag = tag.trim();
+			if (!tagsMap[tag]) resTags.push(tag);
+		});
+		resTags = resTags.concat(tags);
 
-			if (req.method != "GET") tags = tags.map(function(tag) {
-				return '+' + tag;
-			});
-			if (tags.length) res.set('X-Cache-Tag', tags);
-		}
-	});
-	next();
-}
+		// unicode string comparison
+		resTags.sort();
+
+		if (req.method != "GET") resTags = resTags.map(function(tag) {
+			return '+' + tag;
+		});
+		debug("response tags", resTags);
+		if (resTags.length) res.set(headerTag, resTags);
+		next();
+	};
+};
 

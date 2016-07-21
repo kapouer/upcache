@@ -1,6 +1,7 @@
 var should = require('should');
 var fs = require('fs');
 var runner = require('./runner');
+var tag = require('../src/tag');
 var debug = require('debug')('tag');
 
 var port = 3000;
@@ -32,32 +33,28 @@ describe("Tag", function suite() {
 		}, done);
 
 		var app = servers.express;
-		app.use(require('../src/tag'));
 
-		app.get('/a', function(req, res, next) {
+		app.get('/a', tag('global'), function(req, res, next) {
 			count(req.path);
-			res.set('X-Cache-Tag', 'global');
 			res.send({
 				value: (req.path || '/').substring(1),
 				date: new Date()
 			});
 		});
 
-		app.get(testPath, function(req, res, next) {
+		app.get(testPath, tag('test'), function(req, res, next) {
 			count(req.path);
-			res.set('X-Cache-Tag', 'test');
 			res.send({
 				value: (req.path || '/').substring(1),
 				date: new Date()
 			});
 		});
 
-		app.post(testPath, function(req, res, next) {
+		app.post(testPath, tag(), function(req, res, next) {
 			res.send('OK');
 		});
 
-		app.post("/a", function(req, res, next) {
-			res.set('X-Cache-Tag', 'test');
+		app.post("/a", tag('test'), function(req, res, next) {
 			res.send('OK');
 		});
 	});
