@@ -91,7 +91,7 @@ function authorize(action, restrictions, scopes) {
 function sendHeaders(res, list) {
 	// an empty list does not have same meaning as no list at all
 	if (list) {
-		res.set(headerRestriction, list.join(','));
+		res.set(headerRestriction, list);
 		debug("send header", headerRestriction, list);
 	} else {
 		debug("not sending header", headerRestriction);
