@@ -41,6 +41,7 @@ module.exports = function(opts, cb) {
 		]);
 		obj.nginx.stdout.pipe(process.stdout);
 		obj.nginx.stderr.pipe(new FilterPipe(function(str) {
+			if (/start worker process /.test(str)) setImmediate(cb);
 			str = str.replace(/^nginx: \[alert\] could not open error log file: open.*/, "");
 			str = str.replace(/^.*(\[\w+\]).*?:(.*)$/, function(str, p1, p2) {
 				if (p1 == "[notice]") return "";
@@ -50,7 +51,6 @@ module.exports = function(opts, cb) {
 			return str;
 		})).pipe(process.stderr);
 		obj.nginx.on('error', obj.close);
-		setTimeout(cb, 50); // give nginx some time to load
 	} else setImmediate(cb);
 	return obj;
 };
