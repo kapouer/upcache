@@ -115,7 +115,9 @@ exports.restrict = function() {
 		var action = getAction(req.method);
 		var list = restrictionsByAction(action, restrictions);
 		sendHeaders(res, list);
-		if (authorize(action, list, scopes)) {
+		var grants = authorize(action, list, scopes);
+		if (grants) {
+			debug("grants", grants);
 			next();
 		} else if (!scopes) {
 			res.sendStatus(401);
