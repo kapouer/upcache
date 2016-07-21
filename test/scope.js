@@ -53,7 +53,8 @@ describe("Scope", function suite() {
 		var app = servers.express;
 
 		app.post('/login', function(req, res, next) {
-			var bearer = scope.login(res, {
+			var givemeScope = req.query.scope;
+			var scopes = {
 				"user-44": true,
 				bookWriter: {
 					write: true
@@ -61,7 +62,9 @@ describe("Scope", function suite() {
 				bookReader: {
 					read: true
 				}
-			});
+			};
+			if (givemeScope) scopes = {[givemeScope]: true};
+			var bearer = scope.login(res, scopes);
 			res.send({
 				bearer: bearer // convenient but not technically needed
 			});
@@ -71,7 +74,7 @@ describe("Scope", function suite() {
 			scope.logout(res);
 		});
 
-		app.get(testPath, scope.restrict('bookReader'), function(req, res, next) {
+		app.get(testPath, scope.restrict('bookReader', 'bookSecond'), function(req, res, next) {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -261,6 +264,34 @@ describe("Scope", function suite() {
 			});
 		}).then(function(res) {
 			res.statusCode.should.equal(401);
+		});
+	});
+
+	it("should log in with different scopes and cache each variant with proxy", function() {
+		var headers = {};
+		var req = {
+			headers: headers,
+			port: port,
+			path: testPath
+		};
+		var firstDate;
+		return runner.post(host + '/login?scope=bookReader').then(function(res) {
+			res.headers.should.have.property('set-cookie');
+			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(200);
+			firstDate = res.body.date;
+			return runner.post(host + '/login?scope=bookSecond');
+		}).then(function(res) {
+			res.headers.should.have.property('set-cookie');
+			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(200);
+			res.body.date.should.not.equal(firstDate);
 		});
 	});
 
