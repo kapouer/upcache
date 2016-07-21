@@ -83,6 +83,8 @@ function close(cb) {
 
 module.exports.get = function(uri) {
 	return new Promise(function(resolve, reject) {
+		if (typeof uri == "string") uri = URL.parse(uri);
+		uri = Object.assign({}, uri);
 		http.get(uri, function(res) {
 			var body = "";
 			res.setEncoding('utf8');
@@ -106,6 +108,7 @@ module.exports.get = function(uri) {
 module.exports.post = function(uri, data) {
 	return new Promise(function(resolve, reject) {
 		if (typeof uri == "string") uri = URL.parse(uri);
+		uri = Object.assign({}, uri);
 		uri.method = 'POST';
 		var req = http.request(uri, function(res) {
 			resolve(res);
