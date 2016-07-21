@@ -1,9 +1,7 @@
 cache-protocols
 ===============
 
-This module proposes a working implementation of an effective proxy cache,
-with both a passive (using normalization functions) Vary implementation, and
-an active (invalidable by the application) cache mecanism.
+Scope and Tag cache protocols for application - proxy cache keys management.
 
 
 Software stack
@@ -20,33 +18,13 @@ The implementation here uses:
 Principle
 ---------
 
-The application interacts with downstream proxies using HTTP headers.
+The application interacts with downstream proxies using HTTP response headers,
+and the proxies interacts with the application using HTTP request headers.
 
-The main way to do so is using Vary response headers to instruct proxies how to
-build future cache key requests for a given url.
+The legacy HTTP header is "Vary" but it is not sufficient for caching dynamic
+resources.
 
-The proxy is configured with customizable normalization functions for request
-headers (with sane defaults for the most common ones), so that the request key
-does not vary too much to be useful.
-
-On top of that, there is a need for a mecanism that allows the application to
-tag url and invalidate all url for a given tag at once:
-
-- application tags a resource by replying with a `X-Cache-Tag: mytag` response
-header - this implies `Vary: X-Cache-Tag` so it does not need to be added.
-- proxy stores `mytag` as a sub-variant tag key for that url, and stores that
-value for that tag. This is like a `Vary: mytag` where `mytag` actual value is
-stored internally.
-- the normalization function for that variant returns `mytag=curval`
-- when the application sends a `X-Cache-Tag: +mytag` in a response
-header, the proxy changes that tag value (typically by incrementing it)
-- thus all url using that variant header will be invalidated at once
-- the order of processing is not important (hence the choice of a commutative
-update operation).
-
-The variants cache and the memcached backend are both LRU caches, so they don't
-actually need to be purged - requests keys just need to be changed.
-
+See README-scope and README-tag for further details.
 
 Requirements
 ------------
