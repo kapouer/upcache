@@ -47,7 +47,8 @@ describe("Scope", function suite() {
 				port: port,
 				conf: '../../src/scope.conf'
 			}
-		});
+		}, done);
+
 		var app = servers.express;
 
 		app.post('/login', function(req, res, next) {
@@ -87,8 +88,6 @@ describe("Scope", function suite() {
 				date: new Date()
 			});
 		});
-
-		done();
 	});
 
 	after(function(done) {

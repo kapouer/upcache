@@ -10,7 +10,7 @@ process.chdir(__dirname);
 
 var tempFile = './.temp.conf';
 
-module.exports = function(opts) {
+module.exports = function(opts, cb) {
 	var obj = {};
 	obj.close = close.bind(obj);
 	process.on('exit', obj.close);
@@ -50,7 +50,8 @@ module.exports = function(opts) {
 			return str;
 		})).pipe(process.stderr);
 		obj.nginx.on('error', obj.close);
-	}
+		setTimeout(cb, 50); // give nginx some time to load
+	} else setImmediate(cb);
 	return obj;
 };
 

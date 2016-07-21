@@ -29,7 +29,8 @@ describe("Tag", function suite() {
 				port: port,
 				conf: '../../src/tag.conf'
 			}
-		});
+		}, done);
+
 		var app = servers.express;
 		app.use(require('../src/tag'));
 
@@ -59,8 +60,6 @@ describe("Tag", function suite() {
 			res.set('X-Cache-Tag', 'test');
 			res.send('OK');
 		});
-
-		done();
 	});
 
 	after(function(done) {
