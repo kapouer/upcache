@@ -48,7 +48,7 @@ end
 
 function module.set(key, headers)
 	local tags = headers[HEADER];
-	if tags == nil then return end
+	if tags == nil then return key end
 	if type(tags) == "string" then
 		tags = {tags}
 	end
