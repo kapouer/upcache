@@ -6,7 +6,7 @@ var URL = require('url');
 var cookie = require('cookie');
 
 var runner = require('./runner');
-var scope = require('../src/scope')({
+var scope = require('../scope')({
 	privateKey: fs.readFileSync(Path.join(__dirname, 'fixtures/private.pem')).toString(),
 	publicKey: fs.readFileSync(Path.join(__dirname, 'fixtures/public.pem')).toString(),
 	maxAge: 3600,

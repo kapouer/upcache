@@ -4,7 +4,7 @@ var fs = require('fs');
 var URL = require('url');
 
 var runner = require('./runner');
-var tag = require('../src/tag');
+var tag = require('../tag');
 
 var port = 3000;
 

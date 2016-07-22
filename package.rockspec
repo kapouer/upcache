@@ -18,7 +18,7 @@ dependencies = {
 build = {
    type = "builtin",
    modules = {
-      ['upcache.scope'] = "src/upcache/scope.lua",
-      ['upcache.tag'] = "src/upcache/tag.lua"
+      ['upcache.scope'] = "scope.lua",
+      ['upcache.tag'] = "tag.lua"
    }
 }
