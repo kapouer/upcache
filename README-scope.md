@@ -9,9 +9,7 @@ Install
 -------
 
 ```
-luarocks install lua-resty-jwt
-luarocks install lua-resty-string
-npm install jsonwebtoken cookie
+npm install upcache
 ```
 
 
@@ -27,11 +25,13 @@ Usage
 -----
 
 ```
-var scope = require('scope')({
+var scope = require('upcache/scope')({
 	publicKey: <rsa public key>,
 	privateKey: <rsa private key>,
 	issuer: the application name,
-	maxAge: age in seconds
+	maxAge: age in seconds,
+	forbidden: res => res.sendStatus(403), // optional
+	unauthorized: res => res.sendStatus(401) // optional
 });
 
 app.post("/login", function(req, res, next) {
@@ -50,6 +50,7 @@ app.post("/login", function(req, res, next) {
 
 app.get("/logout", function(req, res, next) {
 	scope.logout(res);
+	res.sendStatus(204);
 });
 
 app.get('/api/user', scope.restrict("&user-*", "admin"), myMidleware);
@@ -73,9 +74,9 @@ The above example with more control
 ```
 app.get("/api/user", function(req, res, next) {
 	if (scope.allowed(req, "permA", "permB")) {
-		scope.headers(res);
+		next();
 	} else {
-		scope.reject(res);
+		res.sendStatus(403);
 	}
 }, appMw);
 ```

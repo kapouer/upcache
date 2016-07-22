@@ -71,6 +71,7 @@ describe("Scope", function suite() {
 
 		app.post('/logout', function(req, res, next) {
 			scope.logout(res);
+			res.sendStatus(204);
 		});
 
 		app.get(testPath, scope.restrict('bookReader', 'bookSecond'), function(req, res, next) {

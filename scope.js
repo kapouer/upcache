@@ -11,7 +11,15 @@ var publicKeySent = false;
 
 var config;
 exports = module.exports = function(obj) {
-	config = Object.assign({}, obj);
+	config = Object.assign({
+		forbidden: function(res) {
+			res.sendStatus(403);
+		},
+		unauthorized: function(res) {
+			res.sendStatus(401);
+		}
+
+	}, obj);
 	return exports;
 };
 
@@ -98,10 +106,6 @@ function sendHeaders(res, list) {
 	}
 };
 
-exports.reject = function(res) {
-	res.sendStatus(403);
-};
-
 exports.restrict = function() {
 	var restrictions = Array.from(arguments);
 	// TODO memoize restrictionsByAction
@@ -120,9 +124,9 @@ exports.restrict = function() {
 			debug("grants", grants);
 			next();
 		} else if (!scopes) {
-			res.sendStatus(401);
+			config.unauthorized(res);
 		} else {
-			res.sendStatus(403);
+			config.forbidden(res);
 		}
 	};
 };
@@ -152,7 +156,6 @@ exports.logout = function(res) {
 		httpOnly: true,
 		path: '/'
 	});
-	res.sendStatus(204);
 };
 
 function getAction(method) {
