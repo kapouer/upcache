@@ -45,8 +45,7 @@ describe("Scope", function suite() {
 				port: port + 1
 			},
 			nginx: {
-				port: port,
-				conf: '../../src/scope.conf'
+				port: port
 			}
 		}, done);
 

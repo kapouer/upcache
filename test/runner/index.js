@@ -2,13 +2,14 @@ var spawn = require('child_process').spawn;
 var express = require('express');
 var http = require('http');
 var fs = require('fs');
+var Path = require('path');
 var URL = require('url');
 var Transform = require('stream').Transform;
 var util = require('util');
 
-process.chdir(__dirname);
+var rootDir = Path.resolve(__dirname, '../../nginx');
 
-var tempFile = './.temp.conf';
+process.chdir(rootDir);
 
 module.exports = function(opts, cb) {
 	var obj = {};
@@ -27,17 +28,9 @@ module.exports = function(opts, cb) {
 		obj.memcached.on('error', obj.close);
 	}
 	if (opts.nginx) {
-		var conf = fs.readFileSync(opts.nginx.conf).toString();
-		conf = conf.replace(/\$root/g, "../../");
-		if (opts.memcached) conf = conf.replace(/\$memcached/g, opts.memcached.port);
-		if (opts.express) conf = conf.replace(/\$express/g, opts.express.port);
-		conf = conf.replace(/\$nginx/g, opts.nginx.port);
-
-		fs.writeFileSync(tempFile, conf);
-
 		obj.nginx = spawn('/usr/sbin/nginx', [
-			'-p', __dirname,
-			'-c', './index.conf'
+			'-p', rootDir,
+			'-c', 'nginx.conf'
 		]);
 		obj.nginx.stdout.pipe(process.stdout);
 		obj.nginx.stderr.pipe(new FilterPipe(function(str) {
@@ -56,9 +49,6 @@ module.exports = function(opts, cb) {
 };
 
 function close(cb) {
-	try {
-		fs.unlinkSync(tempFile);
-	} catch(ex) {}
 	var count = 0;
 	if (this.nginx) {
 		count++;
