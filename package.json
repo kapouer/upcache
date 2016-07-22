@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "description": "nginx proxy cache key protocols implementations",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "rock": "version=$(node -p \"require('./package').version\")-1 && name=$(node -p \"require('./package').name\") && echo \"version = '${version}'\" | cat - package.rockspec > ${name}-${version}.rockspec"
   },
   "repository": {
     "type": "git",

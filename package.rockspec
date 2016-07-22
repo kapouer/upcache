@@ -1,5 +1,4 @@
 package = "upcache"
-version = "0.1.0-1"
 source = {
    url = "git://github.com/kapouer/upcache.git"
 }
@@ -18,7 +17,7 @@ dependencies = {
 build = {
    type = "builtin",
    modules = {
-      ['upcache.scope'] = "scope.lua",
-      ['upcache.tag'] = "tag.lua"
+      ['upcache.scope'] = "upcache/scope.lua",
+      ['upcache.tag'] = "upcache/tag.lua"
    }
 }
