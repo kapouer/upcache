@@ -1,7 +1,7 @@
 package = "upcache"
 version = "0.1.0-1"
 source = {
-   url = "https://github.com/kapouer/upcache/archive/0.1.0.tar.gz"
+   url = "git://github.com/kapouer/upcache.git"
 }
 description = {
    summary = "Scope and Tag cache protocols for application - proxy cache keys management.",
