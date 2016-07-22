@@ -1,21 +1,31 @@
+var debug = require('debug')('tag');
 var should = require('should');
 var fs = require('fs');
+var URL = require('url');
+
 var runner = require('./runner');
 var tag = require('../src/tag');
-var debug = require('debug')('tag');
 
 var port = 3000;
 
 describe("Tag", function suite() {
 	var servers;
-	var host = 'http://localhost:' + port;
-	var testPath = '/having-tag-test';
+	var testPath = '/tag-test';
 	var counters = {};
 
-	function count(uri) {
+	function count(uri, inc) {
+		if (typeof uri != "string") {
+			if (uri.get) uri = uri.protocol + '://' + uri.get('Host') + uri.path;
+			else uri = URL.format(Object.assign({
+				protocol: 'http',
+				hostname: 'localhost',
+				pathname: uri.path
+			}, uri));
+		}
 		var counter = counters[uri];
 		if (counter == null) counter = counters[uri] = 0;
-		return counters[uri]++;
+		if (inc) counters[uri] += inc;
+		return counters[uri];
 	}
 
 	before(function(done) {
@@ -35,7 +45,7 @@ describe("Tag", function suite() {
 		var app = servers.express;
 
 		app.get('/a', tag('global'), function(req, res, next) {
-			count(req.path);
+			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
 				date: new Date()
@@ -43,7 +53,7 @@ describe("Tag", function suite() {
 		});
 
 		app.get(testPath, tag('test'), function(req, res, next) {
-			count(req.path);
+			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
 				date: new Date()
@@ -64,25 +74,33 @@ describe("Tag", function suite() {
 	});
 
 	it("should cache a url", function() {
-		return runner.get(host + testPath).then(function(res) {
+		var req = {
+			port: port,
+			path: testPath
+		};
+		return runner.get(req).then(function(res) {
 			res.headers.should.have.property('x-cache-tag', 'test');
-			return runner.get(host + testPath);
+			return runner.get(req);
 		}).then(function(res) {
 			res.headers.should.have.property('x-cache-tag', 'test');
-			count('/having-tag-test').should.equal(1);
+			count(req).should.equal(1);
 		});
 	});
 
 	it("should invalidate a tag using a post", function() {
 		var firstDate;
-		return runner.get(host + testPath)
+		var req = {
+			port: port,
+			path: testPath
+		};
+		return runner.get(req)
 		.then(function(res) {
 			firstDate = Date.parse(res.body.date);
 			res.headers.should.have.property('x-cache-tag', 'test');
-			return runner.post(host + testPath, 'postbody');
+			return runner.post(req, 'postbody');
 		}).then(function(res) {
 			res.headers.should.have.property('x-cache-tag', '+test');
-			return runner.get(host + testPath);
+			return runner.get(req);
 		}).then(function(res) {
 			Date.parse(res.body.date).should.be.greaterThan(firstDate);
 		});
@@ -90,14 +108,21 @@ describe("Tag", function suite() {
 
 	it("should invalidate a tag using a post to a different path", function() {
 		var firstDate;
-		return runner.get(host + testPath)
+		var req = {
+			port: port,
+			path: testPath
+		};
+		return runner.get(req)
 		.then(function(res) {
 			firstDate = Date.parse(res.body.date);
 			res.headers.should.have.property('x-cache-tag', 'test');
-			return runner.post(host + "/a", 'postbody');
+			return runner.post({
+				port: port,
+				path: "/a"
+			}, 'postbody');
 		}).then(function(res) {
 			res.headers.should.have.property('x-cache-tag', '+test');
-			return runner.get(host + testPath);
+			return runner.get(req);
 		}).then(function(res) {
 			Date.parse(res.body.date).should.be.greaterThan(firstDate);
 		});
