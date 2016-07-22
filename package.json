@@ -1,6 +1,6 @@
 {
   "name": "upcache",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "nginx proxy cache key protocols implementations",
   "main": "index.js",
   "scripts": {
@@ -25,10 +25,10 @@
   },
   "dependencies": {
     "cookie": "^0.3.1",
+    "debug": "^2.2.0",
     "jsonwebtoken": "^7.1.6"
   },
   "devDependencies": {
-    "debug": "^2.2.0",
     "express": "^4.14.0",
     "mocha": "^2.5.3",
     "should": "^9.0.2"
