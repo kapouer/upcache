@@ -1,5 +1,5 @@
-cache-protocols
-===============
+upcache
+=======
 
 Scope and Tag cache protocols for application - proxy cache keys management.
 
@@ -49,14 +49,6 @@ And optionally
 - memc-nginx-module  
   https://github.com/openresty/memc-nginx-module
 - a memcached backend
-
-Each implementation comes in two parts:
-
-- a Node.js module with an express middleware, e.g.  
-  `app.use(require('cache-protocols/version'));`
-
-- a configuration file for nginx
-
 
 Installation
 ------------

@@ -1,36 +1,36 @@
 {
-  "name": "cache-protocols",
+  "name": "upcache",
   "version": "0.0.1",
-  "description": "cache protocols implementations between proxy and application",
+  "description": "nginx proxy cache key protocols implementations",
   "main": "index.js",
   "scripts": {
     "test": "mocha"
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:kapouer/cache-protocols.git"
+    "url": "git@github.com:kapouer/upcache.git"
   },
   "keywords": [
     "cache",
     "protocols",
     "nginx",
-    "purge"
+    "purge",
+    "lua",
+    "upstream"
   ],
   "author": "Jérémy Lal <kapouer@melix.org>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/kapouer/cache-protocols/issues"
+    "url": "https://github.com/kapouer/upcache/issues"
   },
   "dependencies": {
     "cookie": "^0.3.1",
-    "jsonwebtoken": "^7.1.6",
-    "on-headers": "^1.0.1"
+    "jsonwebtoken": "^7.1.6"
   },
   "devDependencies": {
     "debug": "^2.2.0",
     "express": "^4.14.0",
     "mocha": "^2.5.3",
-    "on-headers": "^1.0.1",
     "should": "^9.0.2"
   }
 }

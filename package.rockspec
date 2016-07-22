@@ -1,13 +1,12 @@
-package = "cache-protocols"
-version = "0.1.0-2"
+package = "upcache"
+version = "0.1.0-1"
 source = {
-   url = "git://github.com/kapouer/cache-protocols",
-   tag = '0.1.0'
+   url = "https://github.com/kapouer/upcache/archive/0.1.0.tar.gz"
 }
 description = {
    summary = "Scope and Tag cache protocols for application - proxy cache keys management.",
    detailed = "This is the lua module to be used with proper nginx config and Node.js application module",
-   homepage = "https://github.com/kapouer/cache-protocols",
+   homepage = "https://github.com/kapouer/upcache",
    license = "MIT"
 }
 dependencies = {
@@ -19,7 +18,7 @@ dependencies = {
 build = {
    type = "builtin",
    modules = {
-      scope = "src/scope.lua",
-      tag = "src/tag.lua"
+      ['upcache.scope'] = "src/upcache/scope.lua",
+      ['upcache.tag'] = "src/upcache/tag.lua"
    }
 }
