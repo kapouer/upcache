@@ -270,7 +270,6 @@ describe("Scope", function suite() {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			console.log(headers);
 			return runner.get({
 				headers: headers,
 				port: port,

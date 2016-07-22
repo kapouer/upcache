@@ -14,7 +14,6 @@ local HEADER_R = "X-Cache-Restriction"
 local HEADER_P = "X-Cache-Key-Handshake"
 
 local function authorize(restrictions, scopes)
-	log(ERR, "authorize from scopes ", json.encode(scopes))
 	local failure = false
 	local grant, scope, mandatory
 	local grants = {}
@@ -26,7 +25,6 @@ local function authorize(restrictions, scopes)
 			goto continue
 		end
 		if scopes == nil then goto continue end
-		log(ERR, "check scopes against ", grant, json.encode(scopes))
 		mandatory = false
 		if label:sub(1, 1) == "&" then
 			mandatory = true
@@ -44,7 +42,6 @@ local function authorize(restrictions, scopes)
 				end
 			end
 		else
-			log(ERR, "scopes are ", json.encode(scopes), label)
 			scope = scopes[label]
 			if scope == true or scope ~= nil and scope.read == true then
 				table.insert(grants, grant)
@@ -60,17 +57,16 @@ local function authorize(restrictions, scopes)
 	if failure == true or #grants == 0 then
 		return false
 	end
+	table.sort(grants)
 	return grants
 end
 
 local function build_key(key, restrictions, scopes)
-	-- TODO make sure grants are sorted
 	local grants = authorize(restrictions, scopes)
 	if grants == false then
 		return key
 	end
 	key = table.concat(grants, ',') .. ' ' .. key
-	log(ERR, "Grants Key '", key, "'")
 	return key
 end
 
@@ -101,12 +97,16 @@ local function get_scopes(publicKey, bearer)
 end
 
 function module.get(key, vars)
+	local bearer = vars.cookie_bearer
+	if bearer == nil then
+		return key
+	end
 	local publicKey = module.publicKeys[vars.host]
 	if publicKey == nil then
 		ngx.req.set_header(HEADER_P, "1")
 		return key
 	end
-	return build_key(key, get_restrictions(key), get_scopes(publicKey, vars.cookie_bearer))
+	return build_key(key, get_restrictions(key), get_scopes(publicKey, bearer))
 end
 
 function module.set(key, vars, headers)
@@ -119,7 +119,6 @@ function module.set(key, vars, headers)
 		publicKey = module.publicKeys[host]
 	end
 	if publicKey == nil then
-		log(ERR, "missing public key for ", host)
 		return key
 	end
 	local restrictions = headers[HEADER_R];
