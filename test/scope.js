@@ -1,10 +1,11 @@
+var debug = require('debug')('scope');
 var should = require('should');
 var fs = require('fs');
-var runner = require('./runner');
-var debug = require('debug')('scope');
 var Path = require('path');
 var URL = require('url');
 var cookie = require('cookie');
+
+var runner = require('./runner');
 var scope = require('../src/scope')({
 	privateKey: fs.readFileSync(Path.join(__dirname, 'fixtures/private.pem')).toString(),
 	publicKey: fs.readFileSync(Path.join(__dirname, 'fixtures/public.pem')).toString(),
@@ -16,8 +17,8 @@ var port = 3000;
 
 describe("Scope", function suite() {
 	var servers;
-	var testPath = '/having-scope-test';
-	var testPathNotGranted = '/having-scope-not-granted-test';
+	var testPath = '/scope-test';
+	var testPathNotGranted = '/scope-not-granted-test';
 	var counters = {};
 
 	function count(uri, inc) {

@@ -1,10 +1,11 @@
+var debug = require('debug')('full');
 var should = require('should');
 var fs = require('fs');
-var runner = require('./runner');
-var debug = require('debug')('full');
 var Path = require('path');
 var URL = require('url');
 var cookie = require('cookie');
+
+var runner = require('./runner');
 var scope = require('../src/scope')({
 	privateKey: fs.readFileSync(Path.join(__dirname, 'fixtures/private.pem')).toString(),
 	publicKey: fs.readFileSync(Path.join(__dirname, 'fixtures/public.pem')).toString(),
@@ -17,8 +18,9 @@ var port = 3000;
 
 describe("Tag and Scope", function suite() {
 	var servers;
-	var testPath = '/having-scope-test';
-	var testPathNotGranted = '/having-scope-not-granted-test';
+	var testPath = '/full-scope-test';
+	var testPathTag = '/full-scope-tag-test';
+	var testPathNotGranted = '/full-scope-not-granted-test';
 	var counters = {};
 
 	function count(uri, inc) {
@@ -74,7 +76,7 @@ describe("Tag and Scope", function suite() {
 			scope.logout(res);
 		});
 
-		app.get(testPath, tag("global"), scope.restrict('bookReader', 'bookSecond'), function(req, res, next) {
+		app.get(testPath, scope.restrict('bookReader', 'bookSecond'), function(req, res, next) {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -82,8 +84,20 @@ describe("Tag and Scope", function suite() {
 			});
 		});
 
-		app.post(testPath, tag(), function(req, res, next) {
-			res.send(204);
+		app.post(testPath, function(req, res, next) {
+			res.sendStatus(204);
+		});
+
+		app.get(testPathTag, tag("full"), scope.restrict('bookReader', 'bookSecond'), function(req, res, next) {
+			count(req, 1);
+			res.send({
+				value: (req.path || '/').substring(1),
+				date: new Date()
+			});
+		});
+
+		app.post(testPathTag, tag("full"), function(req, res, next) {
+			res.sendStatus(204);
 		});
 
 		app.get(testPathNotGranted, tag("apart"), scope.restrict('bookReaderWhat'), function(req, res, next) {
@@ -229,6 +243,38 @@ describe("Tag and Scope", function suite() {
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			res.body.date.should.not.equal(firstDate);
+		});
+	});
+
+	it("should log in, access url, hit the cache, invalidate the cache with proxy", function() {
+		var headers = {};
+		var req = {
+			headers: headers,
+			port: port,
+			path: testPathTag
+		};
+		return runner.post({
+			port: port,
+			path: '/login'
+		}).then(function(res) {
+			res.headers.should.have.property('set-cookie');
+			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+			return runner.get(req);
+		}).then(function(res) {
+			res.headers.should.have.property('x-cache-restriction', 'bookReader, bookSecond');
+			res.statusCode.should.equal(200);
+			count(req).should.equal(1);
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(200);
+			// because it should be a cache hit
+			count(req).should.equal(1);
+			return runner.post(req);
+		}).then(function(res) {
+			return runner.get(req);
+		}).then(function(res) {
+			count(req).should.equal(2);
 		});
 	});
 
