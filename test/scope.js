@@ -63,9 +63,9 @@ describe("Scope", function suite() {
 				}
 			};
 			if (givemeScope) scopes = {[givemeScope]: true};
-			var bearer = scope.login(res, scopes);
+			var bearer = scope.login(res, {id: 44, scopes: scopes});
 			res.send({
-				bearer: bearer // convenient but not technically needed
+				bearer: bearer // used in the test
 			});
 		});
 

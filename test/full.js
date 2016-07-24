@@ -65,7 +65,7 @@ describe("Tag and Scope", function suite() {
 				}
 			};
 			if (givemeScope) scopes = {[givemeScope]: true};
-			var bearer = scope.login(res, scopes);
+			var bearer = scope.login(res, {scopes: scopes});
 			res.send({
 				bearer: bearer // convenient but not technically needed
 			});
