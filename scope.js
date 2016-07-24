@@ -2,8 +2,6 @@ var jwt = require('jsonwebtoken');
 var cookie = require('cookie');
 var debug = require('debug')('scope');
 
-var jwtAlgorithm = 'RS256';
-
 var headerRestriction = 'X-Cache-Restriction';
 var headerHandshake = 'X-Cache-Key-Handshake';
 
@@ -12,6 +10,7 @@ var publicKeySent = false;
 var config;
 exports = module.exports = function(obj) {
 	config = Object.assign({
+		algorithm: 'RS256',
 		forbidden: function(res) {
 			res.sendStatus(403);
 		},
@@ -131,16 +130,11 @@ exports.restrict = function() {
 	};
 };
 
-// scopes: array of permissions strings
-exports.login = function(res, scopes) {
-	var obj = {
-		iat: Math.floor(Date.now() / 1000),
-		scopes: normalizeScopes(scopes)
-	};
-	obj.exp = obj.iat + config.maxAge;
-
-	var bearer = jwt.sign(obj, config.privateKey, {
-		algorithm: jwtAlgorithm,
+exports.login = function(res, user) {
+	if (!user.scopes) debug("login user without scopes");
+	var bearer = jwt.sign(user, config.privateKey, {
+		expiresIn: config.maxAge,
+		algorithm: config.algorithm,
 		issuer: config.issuer
 	});
 	res.cookie('bearer', bearer, {
@@ -170,33 +164,24 @@ function getAction(method) {
 }
 
 function initScopes(req) {
-	if (req.scopes) return req.scopes;
+	var prop = config.userProperty;
+	if (prop && req[prop]) return req[prop].scopes;
 	if (!req.cookies) req.cookies = cookie.parse(req.headers.cookie || "") || {};
 
 	var bearer = req.cookies.bearer;
 	if (!bearer) {
-		delete req.scopes;
 		return;
 	}
 	var obj;
 	try {
 		obj = jwt.verify(bearer, config.publicKey, {
-			algorithm: jwtAlgorithm,
+			algorithm: config.algorithm,
 			issuer: config.issuer
 		});
 	} catch(ex) {
 		debug(ex, bearer);
 	}
-	req.scopes = obj && obj.scopes || {};
-	return req.scopes;
+	if (prop) req[prop] = obj;
+	return obj.scopes;
 }
 
-function normalizeScopes(scopes) {
-	if (!Array.isArray(scopes)) return scopes;
-	var obj = {};
-	scopes.forEach(function(item) {
-		obj[item] = true;
-	});
-	return obj;
-
-}
