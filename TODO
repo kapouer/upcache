@@ -4,10 +4,12 @@
 - and computed cache keys are added in X-Cache-Key
 
 ## More modular
-- ability to setup whole cache by adding a single line
+- ability to setup whole cache by adding a single line - probably achievable by creating a nginx module
 
 ## rsa key renewal transition
 - existing valid jwt must still be verifiable
 - scope.js must be able to generate and cache rsa key every x seconds
 
+## more explicit API for scopes
+Prepending "&" before permission is an implementation detail - the Node.js api should be explicit.
 
