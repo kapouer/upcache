@@ -28,23 +28,26 @@ Usage
 var scope = require('upcache/scope')({
 	publicKey: <rsa public key>,
 	privateKey: <rsa private key>,
+	algorithm: 'RS256', // optional
 	issuer: the application name,
 	maxAge: age in seconds,
+	userProperty: "user", // optional, populates req[userProperty] if set
 	forbidden: res => res.sendStatus(403), // optional
 	unauthorized: res => res.sendStatus(401) // optional
 });
 
 app.post("/login", function(req, res, next) {
 	dblogin(req.body.login, req.body.password).then(function(user) {
-		scope.login(res, {
-			[`user-${user.id}`]: true
-			bookWriter: {
+		user.scopes = {
+			subscriber: {
+				read: true
+			},
+			editor: {
 				write: true
 			},
-			bookReader: {
-				read: true
-			}
-		});
+			[`user-${user.id}`]: true
+		};
+		scope.login(res, user);
 	});
 });
 
@@ -146,45 +149,6 @@ how to build a cache key given a bearer and those rules.
 For the sake of simplicity, this implementation is not perfect: there is no way
 to tell the cache to not build a key with A and B scopes (if the bearer has them)
 even if the application doesn't require both.
-
-
-Algorithm
----------
-
-
-Upon request, the lookup will return zero, one, or several lists of scopes.
-A successful variant lookup matches all these conditions:
-- variant.scopes.length > 0
-- jwt.scopes exists and contains the list of scopes  
-  in particular, `jwt.scopes.length >= variant.scopes.length`
-- if variant.scopes.limit is not defined or zero,
-  or if `variant.scopes.length < variant.scopes.limit`,
-  this must be true `jwt.scopes.length == variant.scopes.length`  
-  The current request cannot claim more scopes or else it could get a different
-  result because the variant scopes could be greater than the scopes used
-  for lookup.
-
-url restrictions are stored in a shared dict:
-```
-scopes[url] = {
-	list: ["?webmaster", "user %s+"],
-	bearer: "cookie_bearer"
-}
-```
-
-A request key is then easy to build
-```
-local scope = scopes[uri]
-local bearer = ngx.var[scope.bearer or cookie_bearer]
-local jwt  = require 'jwt'
-local crypto = pcall (require, 'crypto') and require 'crypto'
-local publicKey = handshakes[host]
-local token, msg = jwt.decode(bearer, {keys = {public = publicKey}})
-if token ~= nil then
-	
-end
-
-```
 
 
 Public key handshake
