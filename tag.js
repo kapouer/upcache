@@ -1,4 +1,4 @@
-var debug = require('debug')('tag');
+var debug = require('debug')('upcache:tag');
 
 var headerTag = 'X-Cache-Tag';
 

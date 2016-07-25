@@ -1,6 +1,6 @@
 var jwt = require('jsonwebtoken');
 var cookie = require('cookie');
-var debug = require('debug')('scope');
+var debug = require('debug')('upcache:scope');
 
 var headerRestriction = 'X-Cache-Restriction';
 var headerHandshake = 'X-Cache-Key-Handshake';
