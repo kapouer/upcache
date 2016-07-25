@@ -10,7 +10,7 @@ module.exports = function() {
 	return function tagMw(req, res, next) {
 		debug("route has tags", tags);
 		var reqTags = req.get(headerTag);
-		var resTags = [];
+		var resTags = res.get(headerTag) || [];
 		if (reqTags) reqTags.split(',').forEach(function(tag) {
 			tag = tag.trim();
 			if (!tagsMap[tag]) resTags.push(tag);

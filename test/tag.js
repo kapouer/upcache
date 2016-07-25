@@ -66,6 +66,18 @@ describe("Tag", function suite() {
 		app.post("/a", tag('test'), function(req, res, next) {
 			res.send('OK');
 		});
+
+		app.get('/multiple', tag('one'), tag('two'), function(req, res, next) {
+			count(req, 1);
+			res.send({
+				value: (req.path || '/').substring(1),
+				date: new Date()
+			});
+		});
+
+		app.post("/multiple", tag(), function(req, res, next) {
+			res.send('OK');
+		});
 	});
 
 	after(function(done) {
@@ -99,6 +111,25 @@ describe("Tag", function suite() {
 			return runner.post(req, 'postbody');
 		}).then(function(res) {
 			res.headers.should.have.property('x-cache-tag', '+test');
+			return runner.get(req);
+		}).then(function(res) {
+			Date.parse(res.body.date).should.be.greaterThan(firstDate);
+		});
+	});
+
+	it("should invalidate one tag on a route with multiple tags using a post", function() {
+		var firstDate;
+		var req = {
+			port: port,
+			path: "/multiple"
+		};
+		return runner.get(req)
+		.then(function(res) {
+			firstDate = Date.parse(res.body.date);
+			res.headers.should.have.property('x-cache-tag', 'one, two');
+			return runner.post(req, 'postbody');
+		}).then(function(res) {
+			res.headers.should.have.property('x-cache-tag', '+one, +two');
 			return runner.get(req);
 		}).then(function(res) {
 			Date.parse(res.body.date).should.be.greaterThan(firstDate);
