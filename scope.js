@@ -132,24 +132,25 @@ exports.restrict = function() {
 
 exports.login = function(res, user, opts) {
 	if (!user.scopes) debug("login user without scopes");
-	var bearer = jwt.sign(user, config.privateKey, {
-		expiresIn: config.maxAge,
-		algorithm: config.algorithm,
-		issuer: config.issuer
+	opts = Object.assign({}, config, opts);
+	var bearer = jwt.sign(user, opts.privateKey, {
+		expiresIn: opts.maxAge,
+		algorithm: opts.algorithm,
+		issuer: opts.issuer
 	});
-	res.cookie('bearer', bearer, Object.assign({
-		maxAge: config.maxAge * 1000,
+	if (res) res.cookie('bearer', bearer, {
+		maxAge: opts.maxAge * 1000,
 		httpOnly: true,
 		path: '/'
-	}, opts));
+	});
 	return bearer;
 };
 
-exports.logout = function(res, opts) {
-	res.clearCookie('bearer', Object.assign({
+exports.logout = function(res) {
+	res.clearCookie('bearer', {
 		httpOnly: true,
 		path: '/'
-	}, opts));
+	});
 };
 
 function getAction(method) {
