@@ -15,6 +15,12 @@ app.get('/api/collection', tag('zone'), appMw);
 app.post('/api/collection', tag('zone'), appMw);
 // or equivalently, since GET already tags the request,
 app.post('/api/collection', tag(), appMw);
+
+// multiple tags can be set
+app.get('/api/other', tag('zone', 'all'), ...);
+
+// a route can invalidate tags set on other routes
+app.put('/api/sample', tag('all'), ...);
 ```
 
 Cache protocol
