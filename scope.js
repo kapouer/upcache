@@ -141,7 +141,7 @@ exports.login = function(res, user, opts) {
 		maxAge: config.maxAge * 1000,
 		httpOnly: true,
 		path: '/'
-	}, opts);
+	}, opts));
 	return bearer;
 };
 
