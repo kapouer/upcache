@@ -50,8 +50,13 @@ Usage
 Once installed, load appropriate helpers with
 
 ```
+var app = express();
 var tag = require('upcache/tag');
 var scope = require('upcache/scope');
+
+app.get('/route', tag('ugc', 'global'), scope.restrict('logged'), ...);
+app.post('/route', tag(), scope.restrict('logged'), ...);
+
 ```
 
 See README-tag.md and README-scope.md for documentation and tests for more examples.
