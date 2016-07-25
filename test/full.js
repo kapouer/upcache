@@ -10,7 +10,8 @@ var scope = require('../scope')({
 	privateKey: fs.readFileSync(Path.join(__dirname, 'fixtures/private.pem')).toString(),
 	publicKey: fs.readFileSync(Path.join(__dirname, 'fixtures/public.pem')).toString(),
 	maxAge: 3600,
-	issuer: "test"
+	issuer: "test",
+	userProperty: "user"
 });
 var tag = require('../tag');
 
@@ -21,6 +22,7 @@ describe("Tag and Scope", function suite() {
 	var testPath = '/full-scope-test';
 	var testPathTag = '/full-scope-tag-test';
 	var testPathNotGranted = '/full-scope-not-granted-test';
+	var scopeDependentTag = '/scope-dependent-tag';
 	var counters = {};
 
 	function count(uri, inc) {
@@ -55,8 +57,9 @@ describe("Tag and Scope", function suite() {
 
 		app.post('/login', function(req, res, next) {
 			var givemeScope = req.query.scope;
+			var userId = req.query && req.query.id || 44;
 			var scopes = {
-				"user-44": true,
+				[`user-${userId}`]: true,
 				bookWriter: {
 					write: true
 				},
@@ -65,7 +68,7 @@ describe("Tag and Scope", function suite() {
 				}
 			};
 			if (givemeScope) scopes = {[givemeScope]: true};
-			var bearer = scope.login(res, {scopes: scopes});
+			var bearer = scope.login(res, {id: userId, scopes: scopes});
 			res.send({
 				bearer: bearer // convenient but not technically needed
 			});
@@ -107,6 +110,19 @@ describe("Tag and Scope", function suite() {
 				date: new Date()
 			});
 		});
+
+		app.get(scopeDependentTag, scope.restrict('user-*'), function userTag(req, res, next) {
+			tag('usertag' + req.user.id)(req, res, next);
+		}, function(req, res, next) {
+			count(req, 1);
+			res.send({
+				value: (req.path || '/').substring(1),
+				date: new Date()
+			});
+		});
+		app.post(scopeDependentTag, tag("usertag18"), function(req, res, next) {
+			res.sendStatus(200);
+		});
 	});
 
 	after(function(done) {
@@ -144,7 +160,7 @@ describe("Tag and Scope", function suite() {
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-cache-restriction', 'bookReader, bookSecond');
+			res.headers.should.have.property('x-cache-scope', 'bookReader, bookSecond');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
 			return runner.get(req);
@@ -261,7 +277,7 @@ describe("Tag and Scope", function suite() {
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-cache-restriction', 'bookReader, bookSecond');
+			res.headers.should.have.property('x-cache-scope', 'bookReader, bookSecond');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
 			return runner.get(req);
@@ -274,6 +290,58 @@ describe("Tag and Scope", function suite() {
 			return runner.get(req);
 		}).then(function(res) {
 			count(req).should.equal(2);
+		});
+	});
+
+	it("should cache with scope-dependent tags", function() {
+		var headers = {};
+		var req = {
+			headers: headers,
+			port: port,
+			path: scopeDependentTag
+		};
+		var firstDate, firstCookie;
+		return runner.post({
+			port: port,
+			path: '/login?id=17'
+		}).then(function(res) {
+			res.headers.should.have.property('set-cookie');
+			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			firstCookie = headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(200);
+			firstDate = res.body.date;
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(200);
+			res.body.date.should.equal(firstDate);
+			count(req).should.equal(1);
+			return runner.post({
+				port: port,
+				path: '/login?id=18'
+			});
+		}).then(function(res) {
+			res.headers.should.have.property('set-cookie');
+			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(200);
+			res.body.date.should.not.equal(firstDate);
+			count(req).should.equal(2);
+			return runner.post(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(200);
+			return runner.get(req);
+		}).then(function(res) {
+			count(req).should.equal(3);
+			res.statusCode.should.equal(200);
+			headers.Cookie = firstCookie;
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(200);
+			count(req).should.equal(3);
 		});
 	});
 
