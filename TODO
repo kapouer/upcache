@@ -18,3 +18,6 @@ For a given upstream, a "host" variable can be set by the upstream by sending
 a response header X-Cache-Host. That value replaces the default ngx.var.host used
 to compute request/response keys.
 
+## define exactly which chars are allowed in tags/scopes
+
+Typically "=" is forbidden in a scope to avoid confusion with a tag.
