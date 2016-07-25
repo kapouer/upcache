@@ -140,7 +140,7 @@ Examples where application grants access to bearers:
 - with optional scope A and mandatory scope B: `A,+B`
 - with scope A and scope B: `+A,+B`
 - with scope /root/* or scope /other/*: `/root/*,/other/*`
-- any scope: `*`
+- any scope: `*` (meaning all scopes are used to build the key)
 
 
 The cache is not responsible for granting or denying access: it must just knows

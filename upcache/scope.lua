@@ -10,41 +10,42 @@ local format = string.format
 
 module._VERSION = '0.0.1'
 
-local HEADER_R = "X-Cache-Restriction"
+local HEADER_R = "X-Cache-Scope"
 local HEADER_P = "X-Cache-Key-Handshake"
 
+-- star is voluntarily removed from that pattern
+local quotepattern = '(['..("%^$().[]+-?"):gsub("(.)", "%%%1")..'])'
+
+local function quoteReg(str)
+	return str:gsub(quotepattern, "%%%1")
+end
+
 local function authorize(restrictions, scopes)
+	if restrictions == nil or scopes == nil then return false end
 	local failure = false
-	local grant, scope, mandatory
+	local item, scope, scopeObj, mandatory
+	-- array of granted scopes
 	local grants = {}
-	if restrictions == nil then return false end
 	for i, label in pairs(restrictions) do
-		grant = label
-		if label == "*" then
-			table.insert(grants, grant)
-			goto continue
-		end
-		if scopes == nil then goto continue end
 		mandatory = false
 		if label:sub(1, 1) == "&" then
 			mandatory = true
 			label = label:sub(2)
 		end
-		regstr = label:gsub('*', '.*')
-		if regstr:len() ~= label:len() then
-			regstr = "^" .. regstr .. "$"
+		if label:find("%*") then
+			regstr = "^" .. quoteReg(label):gsub('*', '.*') .. "$"
 			for scope, scopeObj in pairs(scopes) do
 				if scopeObj == true or scopeObj ~= nil and scopeObj.read == true then
-					if regstr:match(scope) then
-						table.insert(grants, grant)
+					if scope:find(regstr) ~= nil then
+						table.insert(grants, scope)
 						goto continue
 					end
 				end
 			end
 		else
-			scope = scopes[label]
-			if scope == true or scope ~= nil and scope.read == true then
-				table.insert(grants, grant)
+			scopeObj = scopes[label]
+			if scopeObj == true or scopeObj ~= nil and scopeObj.read == true then
+				table.insert(grants, label)
 				goto continue
 			end
 		end
