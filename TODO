@@ -13,3 +13,8 @@
 ## more explicit API for scopes
 Prepending "&" before permission is an implementation detail - the Node.js api should be explicit.
 
+## per upstream Host configuration for cache key
+For a given upstream, a "host" variable can be set by the upstream by sending
+a response header X-Cache-Host. That value replaces the default ngx.var.host used
+to compute request/response keys.
+
