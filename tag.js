@@ -25,7 +25,7 @@ module.exports = function() {
 		});
 		debug("response tags", resTags);
 		if (resTags.length) res.set(headerTag, resTags);
-		next();
+		if (next) next();
 	};
 };
 

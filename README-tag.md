@@ -23,6 +23,8 @@ app.get('/api/other', tag('zone', 'all'), ...);
 app.put('/api/sample', tag('all'), ...);
 ```
 
+`tag(req, res, next)` can also be called directly, next being optional.
+
 Cache protocol
 --------------
 
