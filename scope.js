@@ -181,6 +181,7 @@ function initScopes(req) {
 	} catch(ex) {
 		debug(ex, bearer);
 	}
+	if (!obj) return;
 	if (prop) req[prop] = obj;
 	return obj.scopes;
 }
