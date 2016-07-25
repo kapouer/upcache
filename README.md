@@ -40,7 +40,8 @@ The nginx configuration need the module
 luarocks install upcache
 ```
 
-nginx is easily configured with the set of files described in `./nginx/README.md`.
+nginx is easily configured with the set of files described in (depending on
+where npm installs the module) `./node_modules/upcache/nginx/README.md`.
 
 
 Usage
@@ -54,6 +55,9 @@ var scope = require('upcache/scope');
 ```
 
 See README-tag.md and README-scope.md for documentation and tests for more examples.
+
+Mind that `srcache` module honours cache control headers - if the application
+sends responses with `Cache-Control: max-age=0`, the resource is not cached.
 
 
 Tests
