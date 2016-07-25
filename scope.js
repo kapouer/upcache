@@ -130,26 +130,26 @@ exports.restrict = function() {
 	};
 };
 
-exports.login = function(res, user) {
+exports.login = function(res, user, opts) {
 	if (!user.scopes) debug("login user without scopes");
 	var bearer = jwt.sign(user, config.privateKey, {
 		expiresIn: config.maxAge,
 		algorithm: config.algorithm,
 		issuer: config.issuer
 	});
-	res.cookie('bearer', bearer, {
+	res.cookie('bearer', bearer, Object.assign({
 		maxAge: config.maxAge * 1000,
 		httpOnly: true,
 		path: '/'
-	});
+	}, opts);
 	return bearer;
 };
 
-exports.logout = function(res) {
-	res.clearCookie('bearer', {
+exports.logout = function(res, opts) {
+	res.clearCookie('bearer', Object.assign({
 		httpOnly: true,
 		path: '/'
-	});
+	}, opts));
 };
 
 function getAction(method) {
