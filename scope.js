@@ -2,14 +2,13 @@ var jwt = require('jsonwebtoken');
 var cookie = require('cookie');
 var debug = require('debug')('upcache:scope');
 
-var headerRestriction = 'X-Cache-Restriction';
-var headerHandshake = 'X-Cache-Key-Handshake';
+module.exports = function(obj) {
+	return new Scope(obj);
+};
 
-var publicKeySent = false;
-
-var config;
-exports = module.exports = function(obj) {
-	config = Object.assign({
+function Scope(obj) {
+	this.publicKeySent = false;
+	this.config = Object.assign({
 		algorithm: 'RS256',
 		forbidden: function(res) {
 			res.sendStatus(403);
@@ -19,15 +18,17 @@ exports = module.exports = function(obj) {
 		}
 
 	}, obj);
-	return exports;
-};
+}
+
+Scope.headerHandshake = 'X-Cache-Key-Handshake';
+Scope.headerScope = 'X-Cache-Scope';
 
 // facility for checking request against some scopes
-exports.allowed = function(req) {
+Scope.prototype.allowed = function(req) {
 	var action = getAction(method);
 	var list = restrictionsByAction(action, Array.from(arguments).slice(1));
 	sendHeaders(req.res, list);
-	return authorize(action, list, initScopes(req));
+	return authorize(action, list, this.parseBearer(req));
 };
 
 function restrictionsByAction(action, list) {
@@ -46,9 +47,10 @@ function restrictionsByAction(action, list) {
 	return restrictions;
 }
 
-function authorize(action, restrictions, scopes) {
+function authorize(action, restrictions, user) {
 	if (!action) return false;
 	var failure = false;
+	var scopes = user && user.scopes;
 	var i, label, grant, scope, mandatory, regstr;
 	var grants = [];
 	for (i=0; i < restrictions.length; i++) {
@@ -98,31 +100,33 @@ function authorize(action, restrictions, scopes) {
 function sendHeaders(res, list) {
 	// an empty list does not have same meaning as no list at all
 	if (list) {
-		res.set(headerRestriction, list);
-		debug("send header", headerRestriction, list);
+		res.set(Scope.headerScope, list);
+		debug("send header", Scope.headerScope, list);
 	} else {
-		debug("not sending header", headerRestriction);
+		debug("not sending header", Scope.headerScope);
 	}
 };
 
-exports.restrict = function() {
+Scope.prototype.restrict = function() {
 	var restrictions = Array.from(arguments);
+	var config = this.config;
+	var self = this;
 	// TODO memoize restrictionsByAction
 	return function(req, res, next) {
-		if (req.get(headerHandshake) == '1' || !publicKeySent) {
+		if (req.get(Scope.headerHandshake) == '1' || !self.publicKeySent) {
 			debug("sending public key to proxy");
-			publicKeySent = true;
-			res.set(headerHandshake, encodeURIComponent(config.publicKey));
+			self.publicKeySent = true;
+			res.set(Scope.headerHandshake, encodeURIComponent(config.publicKey));
 		}
-		var scopes = initScopes(req);
+		var user = self.parseBearer(req);
 		var action = getAction(req.method);
 		var list = restrictionsByAction(action, restrictions);
 		sendHeaders(res, list);
-		var grants = authorize(action, list, scopes);
+		var grants = authorize(action, list, user);
 		if (grants) {
 			debug("grants", grants);
 			next();
-		} else if (!scopes) {
+		} else if (!user || !user.scopes) {
 			config.unauthorized(res);
 		} else {
 			config.forbidden(res);
@@ -130,9 +134,9 @@ exports.restrict = function() {
 	};
 };
 
-exports.login = function(res, user, opts) {
+Scope.prototype.login = function(res, user, opts) {
 	if (!user.scopes) debug("login user without scopes");
-	opts = Object.assign({}, config, opts);
+	opts = Object.assign({}, this.config, opts);
 	var bearer = jwt.sign(user, opts.privateKey, {
 		expiresIn: opts.maxAge,
 		algorithm: opts.algorithm,
@@ -146,7 +150,7 @@ exports.login = function(res, user, opts) {
 	return bearer;
 };
 
-exports.logout = function(res) {
+Scope.prototype.logout = function(res) {
 	res.clearCookie('bearer', {
 		httpOnly: true,
 		path: '/'
@@ -164,9 +168,10 @@ function getAction(method) {
 	}[method];
 }
 
-function initScopes(req) {
+Scope.prototype.parseBearer = function(req) {
+	var config = this.config;
 	var prop = config.userProperty;
-	if (prop && req[prop]) return req[prop].scopes;
+	if (prop && req[prop]) return req[prop];
 	if (!req.cookies) req.cookies = cookie.parse(req.headers.cookie || "") || {};
 
 	var bearer = req.cookies.bearer;
@@ -184,6 +189,6 @@ function initScopes(req) {
 	}
 	if (!obj) return;
 	if (prop) req[prop] = obj;
-	return obj.scopes;
-}
+	return obj;
+};
 
