@@ -65,26 +65,23 @@ Restrictions
 A restriction is an alphanumeric string.
 
 Multiple permissions can be given as arguments,
-in which case the bearer can match one of them or none.
-
-A boolean restriction `true` means 
+in which case the bearer must match at least one of them to get access.
 
 A restriction can be made mandatory by prefixing it with a `&`.
 
-A restriction can contain a wildcard `*` which must match at least one char.
+A restriction can contain a wildcard `*` which match zero or more chars.
+In this case, all scopes matching the restriction will be used to build the
+resource cache key.
 
-The above example with more control
-```
-app.get("/api/user", function(req, res, next) {
-	if (scope.allowed(req, "permA", "permB")) {
-		next();
-	} else {
-		res.sendStatus(403);
-	}
-}, appMw);
-```
+A restriction can also be defined for each type of action, where actions are
+mapped like this:
 
-There is also a convenient shorthand for defining restrictions by actions
+> read: head, get
+> write: add/del/save
+> add: post
+> del: delete
+> save: put, patch
+
 ```
 app.all('/api/books', scope.restrict(
 	"admin", {
@@ -96,15 +93,47 @@ app.all('/api/books', scope.restrict(
 ), appMw);
 ```
 
-In which case a simple wildcard restriction letting everyone read access is
-often useful:
+In this situation, it is often needed to restrict a write action but not a read
+action.
+
+A natural way of doing this would be to not restrict all actions that are not
+defined - but it would be very error prone since it would give access in case
+one forgets to mention some action.
+
+To avoid such mistakes, a special meaning is given to restrictions when they
+are booleans:
+* true means do not restrict access, and since it always match it effectively
+empties the restriction list
+* false means never grant access - not setting anything has the same effect
+
 
 ```
 app.all('/api/items', scope.restrict({
-	read: "*", // if no restriction is given, it effectively blocks access
+	read: true,
 	write: "itemWriter"
 }), appMw);
 ```
+Here all clients will get read access to the same version of the resource,
+and only clients with the right scope will have write access.
+
+Note that a set of restrictions like
+`{ read: true, write: "one" }, { read: "readtwo", write: "two"}` will never
+match the "readtwo" restriction. Instead, to grant access to public and
+to a "readtwo" scope, it is simpler to declare a "public" permission and
+automatically log all users with it.
+
+
+Checking restrictions can also be called manually using `allowed` method:
+```
+app.get("/api/user", function(req, res, next) {
+	if (scope.allowed(req, "permA", "permB")) {
+		next();
+	} else {
+		res.sendStatus(403);
+	}
+}, appMw);
+```
+
 
 Bearer scopes
 -------------
@@ -126,11 +155,11 @@ and scopes read from a JWT.
 The application is responsible (in its HTTP response headers) to provide two
 pieces of information to the proxy:
 
-- X-Cache-Restrictions  
+- X-Cache-Scope  
   a list of restrictions as defined above
 
-- X-Cache-Grants  
-  the actual list of granted bearer scopes (by matching restrictions)
+- X-Cache-Grant (optional optimization)  
+  the actual list of granted bearer scopes
 
 - X-Cache-Bearer (optional, defaults to cookie_bearer)  
   this can be `http_bearer`, or `cookie_bearer`, following nginx variable names.
@@ -140,15 +169,11 @@ Examples where application grants access to bearers:
 - with optional scope A and mandatory scope B: `A,+B`
 - with scope A and scope B: `+A,+B`
 - with scope /root/* or scope /other/*: `/root/*,/other/*`
-- any scope: `*` (meaning all scopes are used to build the key)
-
+- any scope: `*` (all scopes will match and be used to build the key)
 
 The cache is not responsible for granting or denying access: it must just knows
 how to build a cache key given a bearer and those rules.
 
-For the sake of simplicity, this implementation is not perfect: there is no way
-to tell the cache to not build a key with A and B scopes (if the bearer has them)
-even if the application doesn't require both.
 
 
 Public key handshake

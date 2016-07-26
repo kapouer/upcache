@@ -35,31 +35,30 @@ function restrictionsByAction(action, list) {
 	if (!action) return [];
 	if (!Array.isArray(list)) list = [list];
 	var metaAction = action == "read" ? "read" : "write";
-	var restrictions = [];
-	list.forEach(function(item) {
-		if (typeof item != "string") {
+	var i, item, hash = {};
+	for (i=0; i < list.length; i++) {
+		item = list[i];
+		if (typeof item == "object") {
 			if (item[action]) item = item[action];
 			else if (item[metaAction]) item = item[metaAction];
-			else return;
+			else continue;
 		}
-		restrictions.push(item);
-	});
-	return restrictions;
+		if (item === true) return; // return nothing - an empty list would deny access
+		hash[item] = true;
+	}
+	return Object.keys(hash);
 }
 
 function authorize(action, restrictions, user) {
 	if (!action) return false;
-	var failure = false;
+	if (!restrictions) return true;
 	var scopes = user && user.scopes;
+	if (!scopes) return false;
+	var failure = false;
 	var i, label, grant, scope, mandatory, regstr;
-	var grants = [];
+	var grants = {};
 	for (i=0; i < restrictions.length; i++) {
 		grant = label = restrictions[i];
-		if (label == "*") {
-			grants.push(grant);
-			continue;
-		}
-		if (!scopes) continue;
 		mandatory = false;
 		if (label[0] == "&") {
 			mandatory = true;
@@ -75,13 +74,13 @@ function authorize(action, restrictions, user) {
 					return reg.test(scope);
 				}
 			})) {
-				grants.push(grant);
+				grants[grant] = true;
 				continue;
 			}
 		} else {
 			scope = scopes[label];
 			if (scope === true || scope && scope[action]) {
-				grants.push(grant);
+				grants[grant] = true;
 				continue;
 			}
 		}
@@ -90,6 +89,7 @@ function authorize(action, restrictions, user) {
 			break;
 		}
 	}
+	grants = Object.keys(grants);
 	if (failure || !grants.length) return false;
 	// might be useful for optimizing first proxy response key
 	// by sending actual scopes being granted, since the response key

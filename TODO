@@ -21,3 +21,5 @@ to compute request/response keys.
 ## define exactly which chars are allowed in tags/scopes
 
 Typically "=" is forbidden in a scope to avoid confusion with a tag.
+
+## test "true" restriction (access), test empty restriction list (deny)
