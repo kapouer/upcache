@@ -4,8 +4,9 @@ var fs = require('fs');
 var Path = require('path');
 var URL = require('url');
 var cookie = require('cookie');
+var express = require('express');
 
-var runner = require('./runner');
+var runner = require('../spawner');
 var scope = require('../scope')({
 	privateKey: fs.readFileSync(Path.join(__dirname, 'fixtures/private.pem')).toString(),
 	publicKey: fs.readFileSync(Path.join(__dirname, 'fixtures/public.pem')).toString(),
@@ -13,10 +14,14 @@ var scope = require('../scope')({
 	issuer: "test"
 });
 
-var port = 3000;
+var ports = {
+	app: 3000,
+	ngx: 3001,
+	memc: 3002
+};
 
 describe("Scope", function suite() {
-	var servers;
+	var servers, app;
 	var testPath = '/scope-test';
 	var testPathNotGranted = '/scope-not-granted-test';
 	var counters = {};
@@ -37,19 +42,10 @@ describe("Scope", function suite() {
 	}
 
 	before(function(done) {
-		servers = runner({
-			memcached: {
-				port: port + 2
-			},
-			express: {
-				port: port + 1
-			},
-			nginx: {
-				port: port
-			}
-		}, done);
+		servers = runner(ports, done);
 
-		var app = servers.express;
+		app = express();
+		app.server = app.listen(ports.app);
 
 		app.post('/login', function(req, res, next) {
 			var givemeScope = req.query.scope;
@@ -92,6 +88,7 @@ describe("Scope", function suite() {
 	});
 
 	after(function(done) {
+		app.server.close();
 		servers.close(done);
 	});
 
@@ -101,7 +98,7 @@ describe("Scope", function suite() {
 
 	it("should get 401 when accessing a protected url without proxy", function() {
 		var req = {
-			port: port + 1,
+			port: ports.app,
 			path: testPath
 		};
 		return runner.get(req).then(function(res) {
@@ -114,11 +111,11 @@ describe("Scope", function suite() {
 		var headers = {};
 		var req = {
 			headers: headers,
-			port: port + 1,
+			port: ports.app,
 			path: testPath
 		};
 		return runner.post({
-			port: port + 1,
+			port: ports.app,
 			path: '/login'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
@@ -135,11 +132,11 @@ describe("Scope", function suite() {
 		var headers = {};
 		var req = {
 			headers: headers,
-			port: port + 1,
+			port: ports.app,
 			path: testPathNotGranted
 		};
 		return runner.post({
-			port: port + 1,
+			port: ports.app,
 			path: '/login'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
@@ -155,7 +152,7 @@ describe("Scope", function suite() {
 	it("should log in, access, then log out, and be denied access without proxy", function() {
 		var headers = {};
 		return runner.post({
-			port: port + 1,
+			port: ports.app,
 			path: '/login'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
@@ -163,14 +160,14 @@ describe("Scope", function suite() {
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get({
 				headers: headers,
-				port: port + 1,
+				port: ports.app,
 				path: testPath
 			});
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			return runner.post({
 				headers: headers,
-				port: port + 1,
+				port: ports.app,
 				path: "/logout"
 			});
 		}).then(function(res) {
@@ -179,7 +176,7 @@ describe("Scope", function suite() {
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get({
 				headers: headers,
-				port: port + 1,
+				port: ports.app,
 				path: testPath
 			});
 		}).then(function(res) {
@@ -189,7 +186,7 @@ describe("Scope", function suite() {
 
 	it("should get 401 when accessing a protected url with proxy", function() {
 		var req = {
-			port: port,
+			port: ports.ngx,
 			path: testPath
 		};
 		return runner.get(req).then(function(res) {
@@ -202,11 +199,11 @@ describe("Scope", function suite() {
 		var headers = {};
 		var req = {
 			headers: headers,
-			port: port,
+			port: ports.ngx,
 			path: testPath
 		};
 		return runner.post({
-			port: port,
+			port: ports.ngx,
 			path: '/login'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
@@ -229,11 +226,11 @@ describe("Scope", function suite() {
 		var headers = {};
 		var req = {
 			headers: headers,
-			port: port,
+			port: ports.ngx,
 			path: testPathNotGranted
 		};
 		return runner.post({
-			port: port,
+			port: ports.ngx,
 			path: '/login'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
@@ -249,7 +246,7 @@ describe("Scope", function suite() {
 	it("should log in, access, then log out, and be denied access with proxy", function() {
 		var headers = {};
 		return runner.post({
-			port: port,
+			port: ports.ngx,
 			path: '/login'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
@@ -257,14 +254,14 @@ describe("Scope", function suite() {
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get({
 				headers: headers,
-				port: port,
+				port: ports.ngx,
 				path: testPath
 			});
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			return runner.post({
 				headers: headers,
-				port: port,
+				port: ports.ngx,
 				path: "/logout"
 			});
 		}).then(function(res) {
@@ -273,7 +270,7 @@ describe("Scope", function suite() {
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get({
 				headers: headers,
-				port: port,
+				port: ports.ngx,
 				path: testPath
 			});
 		}).then(function(res) {
@@ -285,12 +282,12 @@ describe("Scope", function suite() {
 		var headers = {};
 		var req = {
 			headers: headers,
-			port: port,
+			port: ports.ngx,
 			path: testPath
 		};
 		var firstDate;
 		return runner.post({
-			port: port,
+			port: ports.ngx,
 			path: '/login?scope=bookReader'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
@@ -301,7 +298,7 @@ describe("Scope", function suite() {
 			res.statusCode.should.equal(200);
 			firstDate = res.body.date;
 			return runner.post({
-				port: port,
+				port: ports.ngx,
 				path: '/login?scope=bookSecond'
 			});
 		}).then(function(res) {
@@ -314,6 +311,4 @@ describe("Scope", function suite() {
 			res.body.date.should.not.equal(firstDate);
 		});
 	});
-
-
 });

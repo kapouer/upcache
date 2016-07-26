@@ -1,5 +1,6 @@
+#!/usr/bin/node
+
 var spawn = require('child_process').spawn;
-var express = require('express');
 var http = require('http');
 var fs = require('fs');
 var Path = require('path');
@@ -7,27 +8,23 @@ var URL = require('url');
 var Transform = require('stream').Transform;
 var util = require('util');
 
-var rootDir = Path.resolve(__dirname, '../../nginx');
+var rootDir = Path.resolve(__dirname, 'nginx');
 
 process.chdir(rootDir);
 
-module.exports = function(opts, cb) {
+module.exports = function(ports, cb) {
 	var obj = {};
 	obj.close = close.bind(obj);
 	process.on('exit', obj.close);
-	if (opts.express) {
-		obj.express = express();
-		obj.express.server = obj.express.listen(opts.express.port);
-	}
-	if (opts.memcached) {
-		obj.memcached = spawn('memcached', ['-vv', '-p', opts.memcached.port]);
+	if (ports.memc) {
+		obj.memcached = spawn('memcached', ['-vv', '-p', ports.memc]);
 		obj.memcached.stdout.pipe(process.stdout);
 		obj.memcached.stderr.pipe(new FilterPipe(function(str) {
 			if (/^\<\d+\s[sg]et\s.*$/mig.test(str)) return "[memc] " + str.substring(4);
 		})).pipe(process.stderr);
 		obj.memcached.on('error', obj.close);
 	}
-	if (opts.nginx) {
+	if (ports.ngx) {
 		obj.nginx = spawn('/usr/sbin/nginx', [
 			'-p', rootDir,
 			'-c', 'nginx.conf'
@@ -61,10 +58,6 @@ function close(cb) {
 		this.memcached.on('exit', done);
 		this.memcached.kill('SIGKILL');
 		delete this.memcached;
-	}
-	if (this.express) {
-		this.express.server.close();
-		delete this.express;
 	}
 	function done() {
 		if (--count) cb();

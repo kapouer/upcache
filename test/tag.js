@@ -2,14 +2,19 @@ var debug = require('debug')('tag');
 var should = require('should');
 var fs = require('fs');
 var URL = require('url');
+var express = require('express');
 
-var runner = require('./runner');
+var runner = require('../spawner');
 var tag = require('../tag');
 
-var port = 3000;
+var ports = {
+	app: 3000,
+	ngx: 3001,
+	memc: 3002
+};
 
 describe("Tag", function suite() {
-	var servers;
+	var servers, app;
 	var testPath = '/tag-test';
 	var counters = {};
 
@@ -29,19 +34,10 @@ describe("Tag", function suite() {
 	}
 
 	before(function(done) {
-		servers = runner({
-			memcached: {
-				port: port + 2
-			},
-			express: {
-				port: port + 1
-			},
-			nginx: {
-				port: port
-			}
-		}, done);
+		servers = runner(ports, done);
 
-		var app = servers.express;
+		app = express();
+		app.server = app.listen(ports.app);
 
 		app.get('/a', tag('global'), function(req, res, next) {
 			count(req, 1);
@@ -81,12 +77,13 @@ describe("Tag", function suite() {
 	});
 
 	after(function(done) {
+		app.server.close();
 		servers.close(done);
 	});
 
 	it("should cache a url", function() {
 		var req = {
-			port: port,
+			port: ports.ngx,
 			path: testPath
 		};
 		return runner.get(req).then(function(res) {
@@ -101,7 +98,7 @@ describe("Tag", function suite() {
 	it("should invalidate a tag using a post", function() {
 		var firstDate;
 		var req = {
-			port: port,
+			port: ports.ngx,
 			path: testPath
 		};
 		return runner.get(req)
@@ -120,7 +117,7 @@ describe("Tag", function suite() {
 	it("should invalidate one tag on a route with multiple tags using a post", function() {
 		var firstDate;
 		var req = {
-			port: port,
+			port: ports.ngx,
 			path: "/multiple"
 		};
 		return runner.get(req)
@@ -139,7 +136,7 @@ describe("Tag", function suite() {
 	it("should invalidate a tag using a post to a different path", function() {
 		var firstDate;
 		var req = {
-			port: port,
+			port: ports.ngx,
 			path: testPath
 		};
 		return runner.get(req)
@@ -147,7 +144,7 @@ describe("Tag", function suite() {
 			firstDate = Date.parse(res.body.date);
 			res.headers.should.have.property('x-cache-tag', 'test');
 			return runner.post({
-				port: port,
+				port: ports.ngx,
 				path: "/a"
 			}, 'postbody');
 		}).then(function(res) {
