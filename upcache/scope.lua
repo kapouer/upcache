@@ -123,7 +123,7 @@ function module.set(key, vars, headers)
 		return key
 	end
 	local restrictions = headers[HEADER_R];
-	if restrictions == nil then return end
+	if restrictions == nil then return key end
 	if type(restrictions) == "string" then
 		restrictions = {restrictions}
 	end
