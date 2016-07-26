@@ -17,7 +17,7 @@ module.exports = function(ports, cb) {
 	obj.close = close.bind(obj);
 	process.on('exit', obj.close);
 	if (ports.memc) {
-		obj.memcached = spawn('memcached', ['-vv', '-p', ports.memc]);
+		obj.memcached = spawn('memcached', ['-vv', '-p', ports.memc, '-I', '10m']);
 		obj.memcached.stdout.pipe(process.stdout);
 		obj.memcached.stderr.pipe(new FilterPipe(function(str) {
 			if (/^\<\d+\s[sg]et\s.*$/mig.test(str)) return "[memc] " + str.substring(4);
