@@ -55,7 +55,7 @@ describe("Tag", function suite() {
 			});
 		});
 
-		app.post(testPath, tag(), function(req, res, next) {
+		app.post(testPath, tag('test'), function(req, res, next) {
 			res.send('OK');
 		});
 
@@ -71,7 +71,7 @@ describe("Tag", function suite() {
 			});
 		});
 
-		app.post("/multiple", tag(), function(req, res, next) {
+		app.post("/multiple", tag('two'), function(req, res, next) {
 			res.send('OK');
 		});
 	});
@@ -126,7 +126,7 @@ describe("Tag", function suite() {
 			res.headers.should.have.property('x-cache-tag', 'one, two');
 			return runner.post(req, 'postbody');
 		}).then(function(res) {
-			res.headers.should.have.property('x-cache-tag', '+one, +two');
+			res.headers.should.have.property('x-cache-tag', '+two');
 			return runner.get(req);
 		}).then(function(res) {
 			Date.parse(res.body.date).should.be.greaterThan(firstDate);
