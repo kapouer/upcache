@@ -8,7 +8,7 @@ module._VERSION = '0.0.1'
 
 local HEADER = "X-Cache-Tag"
 
-local function build_key(key, variants, isReq)
+local function build_key(key, variants)
 	if variants == nil then return key end
 	local tags = variants.tags
 	if tags == nil then	return key end
@@ -19,9 +19,6 @@ local function build_key(key, variants, isReq)
 		tagval = mtags[tag]
 		if tagval == nil then tagval = 0 end
 		nkey = tag .. '=' .. tagval .. ' ' .. nkey
-	end
-	if isReq then
-		ngx.req.set_header(HEADER, table.concat(tags, ','))
 	end
 	return nkey
 end
@@ -45,7 +42,7 @@ local function update_variants(key, what, data)
 end
 
 function module.get(key)
-	return build_key(key, get_variants(key), true)
+	return build_key(key, get_variants(key))
 end
 
 function module.set(key, headers)
@@ -66,7 +63,7 @@ function module.set(key, headers)
 		end
 	end
 	local variants = update_variants(key, 'tags', tags)
-	return build_key(key, variants, false)
+	return build_key(key, variants)
 end
 
 return module;
