@@ -33,7 +33,15 @@ app.put('/api/sample', tag('all'), ...);
 
 ```
 
-`tag(req, res, next)` can also be called directly, next being optional.
+`tag(...)(req, res, next)` can also be called directly, next being optional.
+
+The last argument of tag() can be a function replacing the default deciding
+when tags must be incremented:
+```
+function incFn(req) {
+	return req.method != "GET";
+}
+```
 
 
 Cache protocol
