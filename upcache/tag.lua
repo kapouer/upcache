@@ -48,7 +48,7 @@ end
 function module.set(key, headers)
 	local tags = headers[HEADER];
 	if tags == nil then return key end
-	if type(tags) == "string" then
+	if type(tags) ~= "table" then
 		tags = {tags}
 	end
 	local mtags = module.tags
