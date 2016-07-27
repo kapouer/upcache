@@ -62,6 +62,7 @@ function module.set(key, headers)
 			mtags[tag] = tagval + 1
 		end
 	end
+	table.sort(tags)
 	local variants = update_variants(key, 'tags', tags)
 	return build_key(key, variants)
 end
