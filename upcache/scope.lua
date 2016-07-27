@@ -21,7 +21,8 @@ local function quoteReg(str)
 end
 
 local function authorize(restrictions, scopes)
-	if restrictions == nil or scopes == nil then return false end
+	if restrictions == nil then return false end
+	if scopes == nil then scopes = {[""]=true} end
 	local failure = false
 	local item, scope, scopeObj, mandatory
 	-- array of granted scopes
@@ -67,7 +68,8 @@ local function build_key(key, restrictions, scopes)
 	if grants == false then
 		return key
 	end
-	key = table.concat(grants, ',') .. ' ' .. key
+	local str = table.concat(grants, ',')
+	if str:len() > 0 then key = str .. ' ' .. key end
 	return key
 end
 

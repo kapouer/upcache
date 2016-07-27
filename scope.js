@@ -53,7 +53,7 @@ function authorize(action, restrictions, user) {
 	if (!action) return false;
 	if (!restrictions) return true;
 	var scopes = user && user.scopes;
-	if (!scopes) return false;
+	if (!scopes) scopes = {"": true};
 	var failure = false;
 	var i, label, grant, scope, mandatory, regstr;
 	var grants = {};

@@ -174,6 +174,8 @@ Examples where application grants access to bearers:
 The cache is not responsible for granting or denying access: it must just knows
 how to build a cache key given a bearer and those rules.
 
+A client without any bearer is always granted the empty scope "", which will
+always match the wildcard scope "*".
 
 
 Public key handshake
