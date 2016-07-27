@@ -23,3 +23,9 @@ to compute request/response keys.
 Typically "=" is forbidden in a scope to avoid confusion with a tag.
 
 ## test "true" restriction (access), test empty restriction list (deny)
+
+## ability to manipulate tag values with precision ?
+- redesign tag protocol so versions are passed to upstream
+- redesign tag api so one can add a callback to tag() to change the tag value
+However it does not seem to be that useful for now.
+
