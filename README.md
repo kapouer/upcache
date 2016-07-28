@@ -14,7 +14,7 @@ Requirements
 ------------
 
 - nginx >= 1.8, with these openresty's modules
-  lua-nginx-module
+  lua-nginx-module (with luajit enabled or else it fails with missing ffi package)
   set-misc-nginx-module
   headers-more-nginx-module
   lua-nginx-memcached
