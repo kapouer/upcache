@@ -13,14 +13,14 @@ by exchanging headers in existing HTTP requests/responses between proxy and appl
 Requirements
 ------------
 
-- nginx >= 1.8, with these openresty's modules
-  lua-nginx-module (with luajit enabled or else it fails with missing ffi package)
-  set-misc-nginx-module
-  headers-more-nginx-module
-  srcache-nginx-module
+- nginx >= 1.8, with these openresty's modules  
+  lua-nginx-module (with luajit enabled or else it fails with missing ffi package)  
+  set-misc-nginx-module  
+  headers-more-nginx-module  
+  srcache-nginx-module  
   memc-nginx-module
 
-- memcached
+- memcached  
   libmemcached-tools (optional)
 
 - a Node.js express app
