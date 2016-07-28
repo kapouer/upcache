@@ -4,7 +4,8 @@
 - and computed cache keys are added in X-Cache-Key
 
 ## More modular
-- ability to setup whole cache by adding a single line - probably achievable by creating a nginx module
+ability to setup whole cache by adding a single line
+probably achievable by creating a nginx module.
 
 ## rsa key renewal transition
 - existing valid jwt must still be verifiable
