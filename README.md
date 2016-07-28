@@ -22,7 +22,7 @@ Requirements
   memc-nginx-module
 
 - memcached
-  libmemcached-tools
+  libmemcached-tools (optional)
 
 - a Node.js express app
 
