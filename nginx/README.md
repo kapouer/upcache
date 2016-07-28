@@ -10,6 +10,13 @@ snippets/cache-proxy.conf
 
 Goes unmodified in /etc/nginx/snippets/
 
+```
+npm install -g upcache
+cd /etc/nginx/snippets
+ln -s /usr/local/lib/node_modules/upcache/nginx/snippets/cache-location.conf
+ln -s /usr/local/lib/node_modules/upcache/nginx/snippets/cache-memc.conf
+```
+
 
 conf.d/cache-server.conf
 ------------------------
