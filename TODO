@@ -29,3 +29,4 @@ Typically "=" is forbidden in a scope to avoid confusion with a tag.
 - redesign tag api so one can add a callback to tag() to change the tag value
 However it does not seem to be that useful for now.
 
+## should all scopes be tested against a given restriction, or just stop at the first one ?
