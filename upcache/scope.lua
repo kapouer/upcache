@@ -1,7 +1,7 @@
 --package.path = package.path .. ";/usr/local/share/lua/5.1/"
 
 local jwt = require 'resty.jwt'
-local json = require 'json'
+local cjson = require "cjson.safe"
 local mp = require 'MessagePack'
 local module = {}
 local log = ngx.log
