@@ -24,11 +24,12 @@ local function authorize(restrictions, scopes)
 	if restrictions == nil then return false end
 	if scopes == nil then scopes = {[""]=true} end
 	local failure = false
-	local item, scope, scopeObj, mandatory
+	local item, scope, scopeObj, mandatory, found
 	-- array of granted scopes
 	local grants = {}
 	for i, label in pairs(restrictions) do
 		mandatory = false
+		found = false
 		if label:sub(1, 1) == "&" then
 			mandatory = true
 			label = label:sub(2)
@@ -38,23 +39,22 @@ local function authorize(restrictions, scopes)
 			for scope, scopeObj in pairs(scopes) do
 				if scopeObj == true or scopeObj ~= nil and scopeObj.read == true then
 					if scope:find(regstr) ~= nil then
+						found = true
 						table.insert(grants, scope)
-						goto continue
 					end
 				end
 			end
 		else
 			scopeObj = scopes[label]
 			if scopeObj == true or scopeObj ~= nil and scopeObj.read == true then
+				found = true
 				table.insert(grants, label)
-				goto continue
 			end
 		end
-		if mandatory then
+		if mandatory and found == false then
 			failure = true
 			break
 		end
-		::continue::
 	end
 	if failure == true or #grants == 0 then
 		return false
