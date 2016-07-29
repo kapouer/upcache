@@ -37,7 +37,6 @@ local function authorize(restrictions, scopes)
 					if scope:find(regstr) ~= nil then
 						found = true
 						table.insert(grants, scope)
-						break
 					end
 				end
 			end

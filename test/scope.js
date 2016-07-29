@@ -24,6 +24,7 @@ describe("Scope", function suite() {
 	var servers, app;
 	var testPath = '/scope-test';
 	var testPathNotGranted = '/scope-not-granted-test';
+	var testPathWildcardMultiple = '/wildcardmul';
 	var counters = {};
 
 	function count(uri, inc) {
@@ -49,6 +50,7 @@ describe("Scope", function suite() {
 
 		app.post('/login', function(req, res, next) {
 			var givemeScope = req.query.scope;
+			if (givemeScope && !Array.isArray(givemeScope)) givemeScope = [givemeScope];
 			var scopes = {
 				"user-44": true,
 				bookWriter: {
@@ -58,7 +60,12 @@ describe("Scope", function suite() {
 					read: true
 				}
 			};
-			if (givemeScope) scopes = {[givemeScope]: true};
+			if (givemeScope) {
+				scopes = {};
+				givemeScope.forEach(function(myscope) {
+					scopes[myscope] = true;
+				});
+			}
 			var bearer = scope.login(res, {id: 44, scopes: scopes});
 			res.send({
 				bearer: bearer // used in the test
@@ -84,6 +91,17 @@ describe("Scope", function suite() {
 				value: (req.path || '/').substring(1),
 				date: new Date()
 			});
+		});
+		app.get(testPathWildcardMultiple, scope.restrict('book*'), function(req, res, next) {
+			count(req, 1);
+			res.send({
+				value: (req.path || '/').substring(1),
+				date: new Date()
+			});
+		});
+
+		app.post(testPathWildcardMultiple, function(req, res, next) {
+			res.sendStatus(204);
 		});
 	});
 
@@ -301,6 +319,40 @@ describe("Scope", function suite() {
 			return runner.post({
 				port: ports.ngx,
 				path: '/login?scope=bookSecond'
+			});
+		}).then(function(res) {
+			res.headers.should.have.property('set-cookie');
+			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(200);
+			res.body.date.should.not.equal(firstDate);
+		});
+	});
+
+	it("should log in with different scopes on a wildcard restriction and cache each variant with proxy", function() {
+		var headers = {};
+		var req = {
+			headers: headers,
+			port: ports.ngx,
+			path: testPathWildcardMultiple
+		};
+		var firstDate;
+		return runner.post({
+			port: ports.ngx,
+			path: '/login?scope=book1&scope=book2'
+		}).then(function(res) {
+			res.headers.should.have.property('set-cookie');
+			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(200);
+			firstDate = res.body.date;
+			return runner.post({
+				port: ports.ngx,
+				path: '/login?scope=book3&scope=book2'
 			});
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
