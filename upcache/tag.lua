@@ -4,8 +4,6 @@ local log = ngx.log
 local ERR = ngx.ERR
 local format = string.format
 
-module._VERSION = '0.0.1'
-
 local HEADER = "X-Cache-Tag"
 
 local function build_key(key, variants)

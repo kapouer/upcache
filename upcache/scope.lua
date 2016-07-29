@@ -1,5 +1,3 @@
---package.path = package.path .. ";/usr/local/share/lua/5.1/"
-
 local jwt = require 'resty.jwt'
 local cjson = require "cjson.safe"
 local mp = require 'MessagePack'
@@ -7,8 +5,6 @@ local module = {}
 local log = ngx.log
 local ERR = ngx.ERR
 local format = string.format
-
-module._VERSION = '0.0.1'
 
 local HEADER_R = "X-Cache-Scope"
 local HEADER_P = "X-Cache-Key-Handshake"
