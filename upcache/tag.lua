@@ -5,6 +5,8 @@ local ERR = ngx.ERR
 local format = string.format
 
 local HEADER = "X-Cache-Tag"
+-- monotonous version prefix - prevents key conflicts between nginx reboots
+local MVP = ngx.time()
 
 local function build_key(key, variants)
 	if variants == nil then return key end
@@ -56,8 +58,12 @@ function module.set(key, headers)
 			tag = tag:sub(2)
 			tags[i] = tag
 			tagval = mtags[tag]
-			if tagval == nil then tagval = 0 end
-			mtags[tag] = tagval + 1
+			if tagval == nil then
+				tagval = MVP
+			else
+				tagval = tagval + 1
+			end
+			mtags[tag] = tagval
 		end
 	end
 	table.sort(tags)
