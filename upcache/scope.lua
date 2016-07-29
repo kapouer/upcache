@@ -118,6 +118,7 @@ function module.set(key, vars, headers)
 	local host = vars.host
 	if publicKey ~= nil then
 		publicKey = ngx.unescape_uri(publicKey)
+		headers[HEADER_P] = nil
 		module.publicKeys[host] = publicKey
 	else
 		publicKey = module.publicKeys[host]
