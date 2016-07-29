@@ -43,6 +43,22 @@ function incFn(req) {
 }
 ```
 
+Access to cache-control directives is made available through the `for` method,
+which accepts one argument: either a TTL for public scope, or an object for
+more options.
+See [express-cache-ctrl](https://github.com/clcastro87/express-cache-ctrl) manuel
+for the options.
+
+```
+app.get('/api/stats', tag.for('1d'), appMw);
+app.get('/api/user', tag('user-*').for('10mn'), appMw);
+app.get('/api/user', tag('user-*').for({
+	ttl: '10mn',
+	scope: 'private',
+	mustRevalidate: true
+}), appMw);
+```
+
 
 Cache protocol
 --------------

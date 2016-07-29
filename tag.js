@@ -1,8 +1,14 @@
 var debug = require('debug')('upcache:tag');
 
+var ctrl = require('express-cache-ctrl');
+
 var headerTag = 'X-Cache-Tag';
 
-module.exports = function() {
+module.exports = tagFn;
+
+tagFn.for = forFn;
+
+function tagFn() {
 	var tags = Array.from(arguments);
 	var len = tags.length;
 	var incFn;
@@ -14,7 +20,7 @@ module.exports = function() {
 		};
 	}
 
-	return function tagMw(req, res, next) {
+	function tagMw(req, res, next) {
 		var inc = incFn(req);
 		tags.forEach(function(tag) {
 			if (inc) tag = '+' + tag;
@@ -22,6 +28,15 @@ module.exports = function() {
 		});
 		debug("response tags", res.get(headerTag));
 		if (next) next();
-	};
-};
+	}
+
+	tagMw.for = forFn;
+	return tagMw;
+}
+
+function forFn(ttl) {
+	var forMw = (typeof ttl == "object") ? ctrl.custom(ttl) : ctrl.public(ttl);
+	forMw.tag = tagFn;
+	return forMw;
+}
 
