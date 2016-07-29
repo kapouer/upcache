@@ -7,6 +7,7 @@ var headerTag = 'X-Cache-Tag';
 module.exports = tagFn;
 
 tagFn.for = forFn;
+tagFn.disable = ctrl.disable;
 
 function tagFn() {
 	var tags = Array.from(arguments);
@@ -35,7 +36,9 @@ function tagFn() {
 }
 
 function forFn(ttl) {
-	var forMw = (typeof ttl == "object") ? ctrl.custom(ttl) : ctrl.public(ttl);
+	var forMw;
+	if (typeof ttl == "object") forMw = ctrl.custom(ttl);
+	else forMw = ctrl.public(ttl);
 	forMw.tag = tagFn;
 	return forMw;
 }
