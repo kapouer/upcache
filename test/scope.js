@@ -211,6 +211,7 @@ describe("Scope", function suite() {
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get(req);
 		}).then(function(res) {
+			res.headers.should.not.have.property('x-cache-key-handshake');
 			res.headers.should.have.property('x-cache-scope', 'bookReader, bookSecond');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
