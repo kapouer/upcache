@@ -1,5 +1,5 @@
 local jwt = require 'resty.jwt'
-local cjson = require "cjson.safe"
+local json = require "cjson.safe"
 local mp = require 'MessagePack'
 local module = {}
 local log = ngx.log
