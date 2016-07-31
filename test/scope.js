@@ -25,6 +25,7 @@ describe("Scope", function suite() {
 	var testPath = '/scope-test';
 	var testPathNotGranted = '/scope-not-granted-test';
 	var testPathWildcardMultiple = '/wildcardmul';
+	var testPathWildcard = '/wildcard';
 	var counters = {};
 
 	function count(uri, inc) {
@@ -67,7 +68,9 @@ describe("Scope", function suite() {
 				});
 			}
 			var bearer = scope.login(res, {id: 44, scopes: scopes});
-			res.send({
+			if (req.query.redirect !== undefined) {
+				res.redirect(req.query.redirect);
+			} else res.send({
 				bearer: bearer // used in the test
 			});
 		});
@@ -92,6 +95,7 @@ describe("Scope", function suite() {
 				date: new Date()
 			});
 		});
+
 		app.get(testPathWildcardMultiple, scope.restrict('book*'), function(req, res, next) {
 			count(req, 1);
 			res.send({
@@ -99,9 +103,16 @@ describe("Scope", function suite() {
 				date: new Date()
 			});
 		});
-
 		app.post(testPathWildcardMultiple, function(req, res, next) {
 			res.sendStatus(204);
+		});
+
+		app.get(testPathWildcard, scope.restrict('*'), function(req, res, next) {
+			count(req, 1);
+			res.send({
+				value: (req.path || '/').substring(1),
+				date: new Date()
+			});
 		});
 	});
 
@@ -353,6 +364,32 @@ describe("Scope", function suite() {
 			return runner.post({
 				port: ports.ngx,
 				path: '/login?scope=book3&scope=book2'
+			});
+		}).then(function(res) {
+			res.headers.should.have.property('set-cookie');
+			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(200);
+			res.body.date.should.not.equal(firstDate);
+		});
+	});
+
+	it("should cache a wildcard-restricted resource without grant then fetch the same with a grant with proxy", function() {
+		var headers = {};
+		var req = {
+			headers: headers,
+			port: ports.ngx,
+			path: testPathWildcard
+		};
+		var firstDate;
+		return runner.get(req).then(function(res) {
+			res.statusCode.should.equal(200);
+			firstDate = res.body.date;
+			return runner.post({
+				port: ports.ngx,
+				path: '/login?redirect=' + encodeURIComponent(testPathWildcard),
 			});
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
