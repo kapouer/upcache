@@ -101,24 +101,18 @@ local function get_scopes(publicKey, bearer)
 	end
 end
 
-function module.get(key, vars)
-	local bearer = vars.cookie_bearer
-	if bearer == nil then
-		return key
-	end
-	local host = vars.host
+local function requestHandshake(host)
 	local publicKey = module.publicKeys[host]
 	if publicKey == nil then
-		log(ERR, "request has bearer but proxy has no public key for ", host)
+		log(INFO, "request has bearer but proxy has no public key for ", host)
 		ngx.req.set_header(HEADER_P, "1")
-		return key
 	end
-	return build_key(key, get_restrictions(key), get_scopes(publicKey, bearer))
+	return publicKey
 end
+module.requestHandshake = requestHandshake
 
-function module.set(key, vars, headers)
+local function responseHandshake(host, headers)
 	local publicKey = headers[HEADER_P]
-	local host = vars.host
 	if publicKey ~= nil then
 		log(INFO, "response sets public key on '", host, "'")
 		publicKey = ngx.unescape_uri(publicKey)
@@ -127,15 +121,35 @@ function module.set(key, vars, headers)
 	else
 		publicKey = module.publicKeys[host]
 	end
+	return publicKey
+end
+module.responseHandshake = responseHandshake
+
+function module.get(key, vars)
+	local bearer = vars.cookie_bearer
+	if bearer == nil then
+		return key
+	end
+	local publicKey = requestHandshake(vars.host)
 	if publicKey == nil then
 		return key
 	end
+	return build_key(key, get_restrictions(key), get_scopes(publicKey, bearer))
+end
+
+function module.set(key, vars, headers)
 	local restrictions = headers[HEADER_R];
 	if restrictions == nil then return key end
 	if type(restrictions) == "string" then
 		restrictions = {restrictions}
 	end
 	update_restrictions(key, restrictions)
+
+	local publicKey = responseHandshake(vars.host, headers)
+	if publicKey == nil then
+		return key
+	end
+
 	return build_key(key, restrictions, get_scopes(publicKey, vars.cookie_bearer))
 end
 

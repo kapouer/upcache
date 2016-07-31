@@ -113,13 +113,13 @@ Scope.prototype.restrict = function() {
 	var self = this;
 	// TODO memoize restrictionsByAction
 	return function(req, res, next) {
+		var user = self.parseBearer(req);
+		var action = getAction(req.method);
 		if (req.get(Scope.headerHandshake) == '1' || !self.publicKeySent) {
 			debug("sending public key to proxy");
 			self.publicKeySent = true;
 			res.set(Scope.headerHandshake, encodeURIComponent(config.publicKey));
 		}
-		var user = self.parseBearer(req);
-		var action = getAction(req.method);
 		var list = restrictionsByAction(action, restrictions);
 		sendHeaders(res, list);
 		var grants = authorize(action, list, user);
