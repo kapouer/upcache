@@ -4,6 +4,7 @@ local mp = require 'MessagePack'
 local module = {}
 local log = ngx.log
 local ERR = ngx.ERR
+local INFO = ngx.INFO
 local format = string.format
 
 local HEADER_R = "X-Cache-Scope"
@@ -114,6 +115,7 @@ function module.set(key, vars, headers)
 	local publicKey = headers[HEADER_P]
 	local host = vars.host
 	if publicKey ~= nil then
+		log(INFO, "response sets public key on '", host, "'")
 		publicKey = ngx.unescape_uri(publicKey)
 		headers[HEADER_P] = nil
 		module.publicKeys[host] = publicKey
