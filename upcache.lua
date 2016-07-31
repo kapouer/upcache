@@ -9,7 +9,8 @@ cacheTag.tags = ngx.shared.upcacheTags
 cacheTag.variants = ngx.shared.upcacheVariants
 
 function module.request()
-	local keyReq = ngx.var.uri
+	local keyReq = ngx.var.host .. ngx.var.uri
+	ngx.ctx.upcacheKey = keyReq
 	local nkeyReq = keyReq
 	local method = ngx.req.get_method()
 	if method == "GET" or method == "HEAD" then
@@ -19,7 +20,6 @@ function module.request()
 	end
 	nkeyReq = cacheTag.get(nkeyReq)
 	ngx.var.hashReq = ngx.md5(nkeyReq)
-	ngx.ctx.upcacheKey = nkeyReq
 	ngx.log(ngx.INFO, "request key '", nkeyReq, "'")
 end
 
