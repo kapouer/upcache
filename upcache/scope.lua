@@ -100,8 +100,10 @@ function module.get(key, vars)
 	if bearer == nil then
 		return key
 	end
-	local publicKey = module.publicKeys[vars.host]
+	local host = vars.host
+	local publicKey = module.publicKeys[host]
 	if publicKey == nil then
+		log(ERR, "request has bearer but proxy has no public key for ", host)
 		ngx.req.set_header(HEADER_P, "1")
 		return key
 	end
