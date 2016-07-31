@@ -17,6 +17,11 @@ local function quoteReg(str)
 	return str:gsub(quotepattern, "%%%1")
 end
 
+local function logKey(from, what, key, data)
+	if string.find(key, quoteReg(what) .. "$") == nil then return end
+	log(INFO, from, " ", key, json.encode(data))
+end
+
 local function authorize(restrictions, scopes)
 	if restrictions == nil then return false end
 	if scopes == nil then scopes = {[""]=true} end
