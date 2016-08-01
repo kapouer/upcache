@@ -31,6 +31,10 @@ app.get('/api/other', tag('zone', 'all'), ...);
 // a route can invalidate tags set on other routes
 app.put('/api/sample', tag('all'), ...);
 
+// a tag can depend on the route using req.params replacement
+// no replacement is made if no param is defined.
+app.get('/:domain/list', tag(':domain'), ...);
+
 ```
 
 `tag(...)(req, res, next)` can also be called directly, next being optional.

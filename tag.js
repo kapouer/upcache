@@ -24,6 +24,7 @@ function tagFn() {
 	function tagMw(req, res, next) {
 		var inc = incFn(req);
 		tags.forEach(function(tag) {
+			tag = replaceParams(tag, req.params);
 			if (inc) tag = '+' + tag;
 			res.append(headerTag, tag);
 		});
@@ -43,3 +44,13 @@ function forFn(ttl) {
 	return forMw;
 }
 
+function replaceParams(tag, params) {
+	return tag.replace(/\/:(\w+)/g, function(str, name) {
+		var val = params[name];
+		if (val !== undefined) {
+			return '/' + val;
+		} else {
+			return '/:' + name;
+		}
+	});
+}
