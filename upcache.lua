@@ -1,6 +1,6 @@
 local module = {}
-local cacheScope = require "scope"
-local cacheTag = require "tag"
+local cacheScope = require "upcache.scope"
+local cacheTag = require "upcache.tag"
 
 cacheScope.publicKeys = ngx.shared.upcachePublicKeys
 cacheScope.restrictions = ngx.shared.upcacheRestrictions
