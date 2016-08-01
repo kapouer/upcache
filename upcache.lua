@@ -9,7 +9,7 @@ cacheTag.tags = ngx.shared.upcacheTags
 cacheTag.variants = ngx.shared.upcacheVariants
 
 function module.request()
-	local keyReq = ngx.var.host .. ngx.var.uri
+	local keyReq = ngx.var.host .. ngx.var.request_uri
 	local nkeyReq = keyReq
 	local method = ngx.req.get_method()
 	if method == "GET" or method == "HEAD" then
@@ -24,7 +24,7 @@ end
 
 function module.response()
 	local method = ngx.req.get_method()
-	local keyRes = ngx.var.host .. ngx.var.uri
+	local keyRes = ngx.var.host .. ngx.var.request_uri
 	local nkeyRes = keyRes
 	if method == "GET" or method == "HEAD" then
 		nkeyRes = cacheScope.set(nkeyRes, ngx.var, ngx.header)
