@@ -1,6 +1,6 @@
 {
   "name": "upcache",
-  "version": "0.3.10",
+  "version": "0.3.11",
   "description": "nginx proxy cache key protocols implementations",
   "scripts": {
     "test": "mocha",
