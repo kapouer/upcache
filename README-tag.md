@@ -61,6 +61,8 @@ app.get('/api/user', tag('user-*').for({
 	scope: 'private',
 	mustRevalidate: true
 }), appMw);
+
+app.get('/trigger', tag.disable(), ...); // disable cache
 ```
 
 
