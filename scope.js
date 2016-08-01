@@ -1,6 +1,9 @@
+var debug = require('debug')('upcache:scope');
+
 var jwt = require('jsonwebtoken');
 var cookie = require('cookie');
-var debug = require('debug')('upcache:scope');
+
+var common = require('./common');
 
 module.exports = function(obj) {
 	return new Scope(obj);
@@ -27,6 +30,9 @@ Scope.headerScope = 'X-Cache-Scope';
 Scope.prototype.allowed = function(req) {
 	var action = getAction(method);
 	var list = restrictionsByAction(action, Array.from(arguments).slice(1));
+	if (list) list = list.map(function(r) {
+		return common.replacements(r, req.params);
+	});
 	sendHeaders(req.res, list);
 	return authorize(action, list, this.parseBearer(req));
 };
@@ -121,6 +127,9 @@ Scope.prototype.restrict = function() {
 			res.set(Scope.headerHandshake, encodeURIComponent(config.publicKey));
 		}
 		var list = restrictionsByAction(action, restrictions);
+		if (list) list = list.map(function(r) {
+			return common.replacements(r, req.params);
+		});
 		sendHeaders(res, list);
 		var grants = authorize(action, list, user);
 		if (grants) {
