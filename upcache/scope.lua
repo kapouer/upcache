@@ -76,7 +76,7 @@ local function build_key(key, restrictions, scopes)
 end
 
 local function get_restrictions(key)
-	local pac = module.restrictions[key]
+	local pac = ngx.shared.upcacheRestrictions:get(key)
 	if pac == nil then
 		return nil
 	end
@@ -84,7 +84,7 @@ local function get_restrictions(key)
 end
 
 local function update_restrictions(key, data)
-	module.restrictions[key] = mp.pack(data)
+	ngx.shared.upcacheRestrictions:set(key, mp.pack(data))
 	return data
 end
 
@@ -102,7 +102,7 @@ local function get_scopes(publicKey, bearer)
 end
 
 local function requestHandshake(host)
-	local publicKey = module.publicKeys[host]
+	local publicKey = ngx.shared.upcachePublicKeys:get(host)
 	if publicKey == nil then
 		log(INFO, "request has bearer but proxy has no public key for ", host)
 		ngx.req.set_header(HEADER_P, "1")
@@ -117,9 +117,9 @@ local function responseHandshake(host, headers)
 		log(INFO, "response sets public key on '", host, "'")
 		publicKey = ngx.unescape_uri(publicKey)
 		headers[HEADER_P] = nil
-		module.publicKeys[host] = publicKey
+		ngx.shared.upcachePublicKeys:set(host, publicKey)
 	else
-		publicKey = module.publicKeys[host]
+		publicKey = ngx.shared.upcachePublicKeys:get(host)
 	end
 	return publicKey
 end

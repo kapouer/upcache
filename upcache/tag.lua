@@ -13,10 +13,10 @@ local function build_key(key, variants)
 	local tags = variants.tags
 	if tags == nil then	return key end
 	local nkey = key
-	local mtags = module.tags
+	local mtags = ngx.shared.upcacheTags
 	local tagval
 	for i, tag in pairs(tags) do
-		tagval = mtags[tag]
+		tagval = mtags:get(tag)
 		if tagval == nil then tagval = 0 end
 		nkey = tag .. '=' .. tagval .. ' ' .. nkey
 	end
@@ -24,7 +24,7 @@ local function build_key(key, variants)
 end
 
 local function get_variants(key)
-	local pac = module.variants[key]
+	local pac = ngx.shared.upcacheVariants:get(key)
 	if pac == nil then
 		return nil
 	end
@@ -37,7 +37,7 @@ local function update_variants(key, what, data)
 		vars = {}
 	end
 	vars[what] = data
-	module.variants[key] = mp.pack(vars)
+	ngx.shared.upcacheVariants:set(key, mp.pack(vars))
 	return vars
 end
 
@@ -51,19 +51,19 @@ function module.set(key, headers)
 	if type(tags) ~= "table" then
 		tags = {tags}
 	end
-	local mtags = module.tags
+	local mtags = ngx.shared.upcacheTags
 	local tagval
 	for i, tag in pairs(tags) do
 		if (tag:sub(1,1) == '+') then
 			tag = tag:sub(2)
 			tags[i] = tag
-			tagval = mtags[tag]
+			tagval = mtags:get(tag)
 			if tagval == nil then
 				tagval = MVP
 			else
 				tagval = tagval + 1
 			end
-			mtags[tag] = tagval
+			mtags:set(tag, tagval)
 		end
 	end
 	table.sort(tags)

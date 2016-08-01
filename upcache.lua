@@ -2,12 +2,6 @@ local module = {}
 local cacheScope = require "upcache.scope"
 local cacheTag = require "upcache.tag"
 
-cacheScope.publicKeys = ngx.shared.upcachePublicKeys
-cacheScope.restrictions = ngx.shared.upcacheRestrictions
-
-cacheTag.tags = ngx.shared.upcacheTags
-cacheTag.variants = ngx.shared.upcacheVariants
-
 function module.request()
 	local keyReq = ngx.var.host .. ngx.var.request_uri
 	local nkeyReq = keyReq
