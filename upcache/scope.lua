@@ -104,7 +104,6 @@ end
 local function requestHandshake(host)
 	local publicKey = ngx.shared.upcachePublicKeys:get(host)
 	if publicKey == nil then
-		log(INFO, "request has bearer but proxy has no public key for ", host)
 		ngx.req.set_header(HEADER_P, "1")
 	end
 	return publicKey
