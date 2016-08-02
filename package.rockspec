@@ -20,5 +20,6 @@ build = {
       ['upcache'] = "upcache.lua",
       ['upcache.scope'] = "upcache/scope.lua",
       ['upcache.tag'] = "upcache/tag.lua"
-   }
+   },
+   copy_directories = { "nginx" }
 }
