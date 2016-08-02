@@ -12,19 +12,19 @@ var rootDir = Path.resolve(__dirname, 'nginx');
 
 process.chdir(rootDir);
 
-module.exports = function(ports, cb) {
+module.exports = function(opts, cb) {
 	var obj = {};
 	obj.close = close.bind(obj);
 	process.on('exit', obj.close);
-	if (ports.memc) {
-		obj.memcached = spawn('memcached', ['-vv', '-p', ports.memc, '-I', '10m']);
+	if (opts.memc) {
+		obj.memcached = spawn('memcached', ['-vv', '-p', opts.memc, '-I', '10m']);
 		obj.memcached.stdout.pipe(process.stdout);
 		obj.memcached.stderr.pipe(new FilterPipe(function(str) {
 			if (/^\<\d+\s[sg]et\s.*$/mig.test(str)) return "[memc] " + str.substring(4);
-		})).pipe(process.stderr);
+		}, opts.grep)).pipe(process.stderr);
 		obj.memcached.on('error', obj.close);
 	}
-	if (ports.ngx) {
+	if (opts.ngx) {
 		obj.nginx = spawn('/usr/sbin/nginx', [
 			'-p', rootDir,
 			'-c', 'nginx.conf'
@@ -39,7 +39,7 @@ module.exports = function(ports, cb) {
 			});
 			str = str.replace(/^\[lua\][\d\):]*\s/, "[lua]  ");
 			return str;
-		})).pipe(process.stderr);
+		}, opts.grep)).pipe(process.stderr);
 		obj.nginx.on('error', obj.close);
 	} else setImmediate(cb);
 	return obj;
@@ -106,16 +106,21 @@ module.exports.post = function(uri, data) {
 	});
 };
 
-function FilterPipe(matcher) {
+function FilterPipe(matcher, grep) {
 	Transform.call(this);
 	this.matcher = matcher;
+	this.grep = grep ? new RegExp(grep, 'i') : null;
 }
 util.inherits(FilterPipe, Transform);
 FilterPipe.prototype._transform = function(chunk, enc, cb) {
 	var lines = [];
 	chunk.toString().split('\n').forEach(function(str) {
 		str = this.matcher(str);
-		if (str) lines.push(str);
+		if (this.grep) {
+			if (this.grep.test(str)) lines.push(str);
+		} else if (str) {
+			lines.push(str);
+		}
 	}.bind(this));
 	if (lines.length) lines.push('');
 	this.push(lines.join('\n'));

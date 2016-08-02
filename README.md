@@ -63,18 +63,18 @@ Mind that `srcache` module honours cache control headers - if the application
 sends responses with `Cache-Control: max-age=0`, the resource is not cached.
 
 
-Tests
------
+Testing
+-------
 
-`mocha` will launch user instances of memcached, nginx, and express app and run
-full integration tests. No root permissions are needed.
-
-The test suite itself is a great development tool.
-
-Also it is possible to dump memcached using
+A pre-configured nginx environment is available for testing a Node.js application
+that listens on port 3000, with nginx on port 3001 and memcached on port 3002,
+simply by launching (depending on ./node_modules/.bin being on PATH or not)
 ```
-memcdump --servers=127.0.0.1:11211
+upcache-spawn
 ```
+which also has an option for filtering output `-g <regexp pattern>`.
+
+`mocha` relies on it for integration tests. No root permissions are needed.
 
 
 License

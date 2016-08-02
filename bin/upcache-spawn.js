@@ -13,17 +13,25 @@ var parser = dash.createParser({options: [
 	{
 		names: ['ngx'],
 		type: 'number',
+		default: 3001,
 		help: 'nginx port number'
 	},
 	{
 		names: ['memc'],
 		type: 'number',
+		default: 3002,
 		help: 'memcached port number'
 	},
 	{
 		names: ['app'],
 		type: 'number',
+		default: 3000,
 		help: 'app port number (for nginx upstream config)'
+	},
+	{
+		names: ['grep', 'g'],
+		type: 'string',
+		help: 'filter output by pattern'
 	}
 ]});
 
