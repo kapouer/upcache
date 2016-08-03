@@ -31,7 +31,10 @@ module.exports = function(opts, cb) {
 		]);
 		obj.nginx.stdout.pipe(process.stdout);
 		obj.nginx.stderr.pipe(new FilterPipe(function(str) {
-			if (/start worker process /.test(str)) setImmediate(cb);
+			if (/start worker process /.test(str) && !obj.nginx.started) {
+				obj.nginx.started = true;
+				setImmediate(cb);
+			}
 			str = str.replace(/^nginx: \[alert\] could not open error log file: open.*/, "");
 			str = str.replace(/^.*(\[\w+\]).*?:(.*)$/, function(str, p1, p2) {
 				if (p1 == "[notice]") return "";
