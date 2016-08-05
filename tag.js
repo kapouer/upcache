@@ -34,7 +34,14 @@ function tagFn() {
 		if (next) next();
 	}
 
-	tagMw.for = forFn;
+	tagMw.for = function(ttl) {
+		return function(req, res, next) {
+			tagMw(req, res, function(err) {
+				if (err) return next(err);
+				forFn(ttl)(req, res, next);
+			});
+		};
+	};
 	return tagMw;
 }
 
@@ -42,7 +49,6 @@ function forFn(ttl) {
 	var forMw;
 	if (typeof ttl == "object") forMw = ctrl.custom(ttl);
 	else forMw = ctrl.public(ttl);
-	forMw.tag = tagFn;
 	return forMw;
 }
 
