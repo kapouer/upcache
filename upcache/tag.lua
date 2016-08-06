@@ -17,7 +17,7 @@ local function build_key(key, variants)
 	local tagval
 	for i, tag in pairs(tags) do
 		tagval = mtags:get(tag)
-		if tagval == nil then tagval = 0 end
+		if tagval == nil then tagval = MVP end
 		nkey = tag .. '=' .. tagval .. ' ' .. nkey
 	end
 	return nkey
