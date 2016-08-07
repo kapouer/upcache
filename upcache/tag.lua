@@ -60,10 +60,8 @@ function module.set(key, headers)
 			tagval = mtags:get(tag)
 			if tagval == nil then
 				tagval = MVP
-			else
-				tagval = tagval + 1
 			end
-			mtags:set(tag, tagval)
+			mtags:set(tag, tagval + 1)
 		end
 	end
 	table.sort(tags)
