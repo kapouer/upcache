@@ -17,6 +17,9 @@ function module.request()
 end
 
 function module.response()
+	if ngx.var.srcache_fetch_status == "HIT" then
+		return
+	end
 	local method = ngx.req.get_method()
 	local keyRes = ngx.var.host .. ngx.var.request_uri
 	local nkeyRes = keyRes
