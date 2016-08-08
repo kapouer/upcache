@@ -5,6 +5,7 @@ var ctrl = require('express-cache-ctrl');
 var common = require('./common');
 
 var headerTag = 'X-Cache-Tag';
+var proxyTag = 'X-Upcache';
 
 module.exports = tagFn;
 
@@ -24,6 +25,11 @@ function tagFn() {
 	}
 
 	function tagMw(req, res, next) {
+		// prevent conditional requests if proxy is caching
+		if (req.get(proxyTag)) {
+			delete req.headers["if-none-match"];
+			delete req.headers["if-modified-since"];
+		}
 		var inc = incFn(req);
 		tags.forEach(function(tag) {
 			tag = common.replacements(tag, req.params);

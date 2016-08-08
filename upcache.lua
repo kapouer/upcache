@@ -2,7 +2,12 @@ local module = {}
 local cacheScope = require "upcache.scope"
 local cacheTag = require "upcache.tag"
 
+local HEADER = "X-Upcache"
+
+module._VERSION = "0.4"
+
 function module.request()
+	ngx.req.set_header(HEADER, module._VERSION)
 	local keyReq = ngx.var.host .. ngx.var.request_uri
 	local nkeyReq = keyReq
 	local method = ngx.req.get_method()

@@ -63,6 +63,13 @@ Mind that `srcache` module honours cache control headers - if the application
 sends responses with `Cache-Control: max-age=0`, the resource is not cached.
 
 
+Detection by upstream
+---------------------
+
+Upcache adds a "X-Upcache: <version>" header to requests, so upstream application
+can detect it is enabled, and which features are available.
+
+
 Testing
 -------
 
