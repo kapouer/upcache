@@ -75,6 +75,10 @@ describe("Tag and Scope", function suite() {
 			res.sendStatus(204);
 		});
 
+		app.get('/', function(req, res, next) {
+			res.send(req.get('x-upcache') ? "ok" : "not ok");
+		});
+
 		app.get(testPath, scope.restrict('bookReader', 'bookSecond'), function(req, res, next) {
 			count(req, 1);
 			res.send({
@@ -128,6 +132,15 @@ describe("Tag and Scope", function suite() {
 
 	beforeEach(function() {
 		counters = {};
+	});
+
+	it("should set X-Upcache version in request header", function() {
+		return runner.get({
+			port: ports.ngx,
+			path: '/'
+		}).then(function(res) {
+			should(res.body).be.equal('ok');
+		});
 	});
 
 	it("should get 401 when accessing a protected url with proxy", function() {
