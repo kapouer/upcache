@@ -47,20 +47,18 @@ function incFn(req) {
 }
 ```
 
-Access to cache-control directives is made available through the `for` method,
-which accepts one argument: either a TTL for public scope, or an object for
-more options.
-See [express-cache-ctrl](https://github.com/clcastro87/express-cache-ctrl) manuel
-for the options.
+Simplified access to cache-control directives is made available through
+`tag.for(...)` or `tag(...).for(...)` method,
+which accepts one argument:
+- string or number: a ttl in string format or in seconds
+- object: options for [express-cache-response-directive](https://github.com/dantman/express-cache-response-directive).
+
+A middleware for disabling cache is also available with `tag.disable()`.
 
 ```
 app.get('/api/stats', tag.for('1d'), appMw);
 app.get('/api/user', tag('user-*').for('10mn'), appMw);
-app.get('/api/user', tag('user-*').for({
-	ttl: '10mn',
-	scope: 'private',
-	mustRevalidate: true
-}), appMw);
+app.get('/api/user', tag('user-*').for(3600), appMw);
 
 app.get('/trigger', tag.disable(), ...); // disable cache
 ```

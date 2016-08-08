@@ -1,6 +1,7 @@
 var debug = require('debug')('upcache:tag');
 
-var ctrl = require('express-cache-ctrl');
+var ctrl = {};
+require('express-cache-response-directive')()(null, ctrl, function() {});
 
 var common = require('./common');
 
@@ -9,8 +10,28 @@ var proxyTag = 'X-Upcache';
 
 module.exports = tagFn;
 
+function forFn(opts) {
+	if (typeof opts == "string") opts = {
+		maxAge: opts
+	};
+	return function(req, res, next) {
+		ctrl.cacheControl.call(res, opts);
+		next();
+	};
+}
+
 tagFn.for = forFn;
-tagFn.disable = ctrl.disable;
+
+tagFn.disable = function() {
+	return function(req, res, next) {
+		ctrl.cacheControl.call(res, {
+			noCache: true,
+			mustRevalidate: true,
+			proxyRevalidate: true
+		});
+		next();
+	};
+};
 
 function tagFn() {
 	var tags = Array.from(arguments);
@@ -26,7 +47,10 @@ function tagFn() {
 
 	function tagMw(req, res, next) {
 		// prevent conditional requests if proxy is caching
+		// it would have been done in the proxy, after a cache miss, if
+		// current proxy allowed that easily
 		if (req.get(proxyTag)) {
+			// TODO deal with If-Match, In-Unmodified-Since, If-Range
 			delete req.headers["if-none-match"];
 			delete req.headers["if-modified-since"];
 		}
@@ -49,12 +73,5 @@ function tagFn() {
 		};
 	};
 	return tagMw;
-}
-
-function forFn(ttl) {
-	var forMw;
-	if (typeof ttl == "object") forMw = ctrl.custom(ttl);
-	else forMw = ctrl.public(ttl);
-	return forMw;
 }
 
