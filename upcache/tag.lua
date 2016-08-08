@@ -4,7 +4,7 @@ local log = ngx.log
 local ERR = ngx.ERR
 local format = string.format
 
-local HEADER = "X-Cache-Tag"
+local HEADER = "X-Upcache-Tag"
 -- monotonous version prefix - prevents key conflicts between nginx reboots
 local MVP = ngx.time()
 

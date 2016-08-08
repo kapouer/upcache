@@ -87,10 +87,10 @@ describe("Tag", function suite() {
 			path: testPath
 		};
 		return runner.get(req).then(function(res) {
-			res.headers.should.have.property('x-cache-tag', 'test');
+			res.headers.should.have.property('x-upcache-tag', 'test');
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-cache-tag', 'test');
+			res.headers.should.have.property('x-upcache-tag', 'test');
 			count(req).should.equal(1);
 		});
 	});
@@ -104,10 +104,10 @@ describe("Tag", function suite() {
 		return runner.get(req)
 		.then(function(res) {
 			firstDate = Date.parse(res.body.date);
-			res.headers.should.have.property('x-cache-tag', 'test');
+			res.headers.should.have.property('x-upcache-tag', 'test');
 			return runner.post(req, 'postbody');
 		}).then(function(res) {
-			res.headers.should.have.property('x-cache-tag', '+test');
+			res.headers.should.have.property('x-upcache-tag', '+test');
 			return runner.get(req);
 		}).then(function(res) {
 			Date.parse(res.body.date).should.be.greaterThan(firstDate);
@@ -123,10 +123,10 @@ describe("Tag", function suite() {
 		return runner.get(req)
 		.then(function(res) {
 			firstDate = Date.parse(res.body.date);
-			res.headers.should.have.property('x-cache-tag', 'one, two');
+			res.headers.should.have.property('x-upcache-tag', 'one, two');
 			return runner.post(req, 'postbody');
 		}).then(function(res) {
-			res.headers.should.have.property('x-cache-tag', '+two');
+			res.headers.should.have.property('x-upcache-tag', '+two');
 			return runner.get(req);
 		}).then(function(res) {
 			Date.parse(res.body.date).should.be.greaterThan(firstDate);
@@ -142,13 +142,13 @@ describe("Tag", function suite() {
 		return runner.get(req)
 		.then(function(res) {
 			firstDate = Date.parse(res.body.date);
-			res.headers.should.have.property('x-cache-tag', 'test');
+			res.headers.should.have.property('x-upcache-tag', 'test');
 			return runner.post({
 				port: ports.ngx,
 				path: "/a"
 			}, 'postbody');
 		}).then(function(res) {
-			res.headers.should.have.property('x-cache-tag', '+test');
+			res.headers.should.have.property('x-upcache-tag', '+test');
 			return runner.get(req);
 		}).then(function(res) {
 			Date.parse(res.body.date).should.be.greaterThan(firstDate);

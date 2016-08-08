@@ -4,7 +4,7 @@ var ctrl = require('express-cache-ctrl');
 
 var common = require('./common');
 
-var headerTag = 'X-Cache-Tag';
+var headerTag = 'X-Upcache-Tag';
 var proxyTag = 'X-Upcache';
 
 module.exports = tagFn;

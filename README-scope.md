@@ -155,13 +155,13 @@ and scopes read from a JWT.
 The application is responsible (in its HTTP response headers) to provide two
 pieces of information to the proxy:
 
-- X-Cache-Scope  
+- X-Upcache-Scope  
   a list of restrictions as defined above
 
-- X-Cache-Grant (optional optimization)  
+- X-Upcache-Grant (optional optimization)  
   the actual list of granted bearer scopes
 
-- X-Cache-Bearer (optional, defaults to cookie_bearer)  
+- X-Upcache-Bearer (optional, defaults to cookie_bearer)  
   this can be `http_bearer`, or `cookie_bearer`, following nginx variable names.
 
 Examples where application grants access to bearers:
@@ -183,10 +183,10 @@ Public key handshake
 
 If the proxy doesn't have the public RSA key for jwt payload verification of the
 current domain, it adds this request header as soon as possible
-- X-Cache-Key-Handshake: 1
+- X-Upcache-Key-Handshake: 1
 
 The application is responsible for sending back in the response this header:
-- X-Cache-Key-Handshake: MFwwDQY...
+- X-Upcache-Key-Handshake: MFwwDQY...
 
 The application can send that header in a response at any time, to update the
 proxy copy of the public key after a change (the js scope lib deals with that).

@@ -7,8 +7,8 @@ local ERR = ngx.ERR
 local INFO = ngx.INFO
 local format = string.format
 
-local HEADER_R = "X-Cache-Scope"
-local HEADER_P = "X-Cache-Key-Handshake"
+local HEADER_R = "X-Upcache-Scope"
+local HEADER_P = "X-Upcache-Key-Handshake"
 
 -- star is voluntarily removed from that pattern
 local quotepattern = '(['..("%^$().[]+-?"):gsub("(.)", "%%%1")..'])'

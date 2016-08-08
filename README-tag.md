@@ -69,8 +69,8 @@ app.get('/trigger', tag.disable(), ...); // disable cache
 Cache protocol
 --------------
 
-Application tags resources by replying `X-Cache-Tag: mytag` response header
-to set resource to latest known value for that tag, or `X-Cache-Tag: +mytag`
+Application tags resources by replying `X-Upcache-Tag: mytag` response header
+to set resource to latest known value for that tag, or `X-Upcache-Tag: +mytag`
 to increment the value known by the proxy for that tag.
 
 Proxy stores `mytag` as a sub-variant tag key for that url, and stores that

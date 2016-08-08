@@ -106,7 +106,7 @@ describe("Scope", function suite() {
 				}}))
 			}
 		}).then(function(res) {
-			res.headers.should.not.have.property('x-cache-key-handshake');
+			res.headers.should.not.have.property('x-upcache-key-handshake');
 			return runner.get(req);
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
