@@ -16,6 +16,8 @@ var ports = {
 describe("Tag", function suite() {
 	var servers, app;
 	var testPath = '/tag-test';
+	var conditionalPath = "/conditional";
+	var conditionalPathNot = "/conditionalnot";
 	var counters = {};
 
 	function count(uri, inc) {
@@ -73,6 +75,24 @@ describe("Tag", function suite() {
 
 		app.post("/multiple", tag('two'), function(req, res, next) {
 			res.send('OK');
+		});
+
+		app.get(conditionalPath, tag('conditional'), function(req, res, next) {
+			count(req, 1);
+			res.set('ETag', 'W/"myetag"');
+			res.send({
+				value: (req.path || '/').substring(1),
+				date: new Date()
+			});
+		});
+
+		app.get(conditionalPathNot, tag('conditionalnot'), function(req, res, next) {
+			count(req, 1);
+			res.set('ETag', 'W/"myetagnot"');
+			res.send({
+				value: (req.path || '/').substring(1),
+				date: new Date()
+			});
 		});
 	});
 
@@ -152,6 +172,42 @@ describe("Tag", function suite() {
 			return runner.get(req);
 		}).then(function(res) {
 			Date.parse(res.body.date).should.be.greaterThan(firstDate);
+		});
+	});
+
+	it("should handle conditional requests from upstream ETag once cached", function() {
+		var headers = {};
+		var req = {
+			headers: headers,
+			port: ports.ngx,
+			path: conditionalPath
+		};
+		return runner.get(req).then(function(res) {
+			res.headers.should.have.property('etag');
+			var etag = res.headers.etag;
+			headers['If-None-Match'] = res.headers.etag;
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(304);
+			count(req).should.equal(1);
+		});
+	});
+
+	it("should not let conditional requests go to upstream", function() {
+		var headers = {};
+		var req = {
+			headers: headers,
+			port: ports.ngx,
+			path: conditionalPathNot
+		};
+		headers['If-None-Match'] = 'W/"myetagnot"';
+		return runner.get(req).then(function(res) {
+			res.statusCode.should.equal(200);
+			count(req).should.equal(1);
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(304);
+			count(req).should.equal(1);
 		});
 	});
 });
