@@ -1,3 +1,5 @@
+[![NPM](https://nodei.co/npm/upcache.png?downloads=true&stars=true)](https://nodei.co/npm/upcache/)
+
 upcache
 =======
 
