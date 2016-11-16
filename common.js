@@ -1,3 +1,5 @@
+exports.headerProxy = 'X-Upcache';
+
 exports.replacements = function replacements(tag, params) {
 	return tag.replace(/:(\w+)/g, function(str, name) {
 		var val = params[name];
