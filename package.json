@@ -31,7 +31,7 @@
     "dashdash": "^1.14.0",
     "debug": "^2.2.0",
     "express-cache-response-directive": "^1.0.0",
-    "jsonwebtoken": "^7.1.6"
+    "jsonwebtoken": "^7.1.9"
   },
   "devDependencies": {
     "express": "^4.14.0",
