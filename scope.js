@@ -13,13 +13,8 @@ function Scope(obj) {
 	this.publicKeySent = false;
 	this.config = Object.assign({
 		algorithm: 'RS256',
-		forbidden: function(res) {
-			res.sendStatus(403);
-		},
-		unauthorized: function(res) {
-			res.sendStatus(401);
-		}
-
+		forbidden: 403,
+		unauthorized: 401
 	}, obj);
 }
 
@@ -132,14 +127,17 @@ Scope.prototype.restrict = function() {
 		});
 		sendHeaders(res, list);
 		var grants = authorize(action, list, user);
+		var err;
 		if (grants) {
 			debug("grants", grants);
-			next();
 		} else if (!user || !user.scopes) {
-			config.unauthorized(res);
+			err = new Error("No user, or no user scopes");
+			err.statusCode = config.unauthorized;
 		} else {
-			config.forbidden(res);
+			err = new Error("No matching user scope found");
+			err.statusCode = config.forbidden;
 		}
+		next(err);
 	};
 };
 

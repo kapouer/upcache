@@ -32,8 +32,9 @@ var scope = require('upcache/scope')({
 	issuer: the application name,
 	maxAge: age in seconds,
 	userProperty: "user", // optional, populates req[userProperty] if set
-	forbidden: res => res.sendStatus(403), // optional
-	unauthorized: res => res.sendStatus(401) // optional
+	// errors are passed to next(err) with err.statusCode having these default values
+	forbidden: 403,
+	unauthorized: 401
 });
 
 app.post("/login", function(req, res, next) {
