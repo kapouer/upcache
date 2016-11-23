@@ -14,6 +14,7 @@
     "cache",
     "protocols",
     "nginx",
+    "proxy",
     "purge",
     "lua",
     "upstream"
