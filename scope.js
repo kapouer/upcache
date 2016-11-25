@@ -141,14 +141,18 @@ Scope.prototype.restrict = function() {
 	};
 };
 
-Scope.prototype.login = function(res, user, opts) {
+Scope.prototype.sign = function(user, opts) {
 	if (!user.scopes) debug("login user without scopes");
 	opts = Object.assign({}, this.config, opts);
-	var bearer = jwt.sign(user, opts.privateKey, {
+	return jwt.sign(user, opts.privateKey, {
 		expiresIn: opts.maxAge,
 		algorithm: opts.algorithm,
 		issuer: opts.issuer
 	});
+};
+
+Scope.prototype.login = function(res, user, opts) {
+	var bearer = this.sign(user, opts);
 	if (res) res.cookie('bearer', bearer, {
 		maxAge: opts.maxAge * 1000,
 		httpOnly: true,
