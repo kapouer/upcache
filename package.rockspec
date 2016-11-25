@@ -19,7 +19,8 @@ build = {
    modules = {
       ['upcache'] = "upcache.lua",
       ['upcache.scope'] = "upcache/scope.lua",
-      ['upcache.tag'] = "upcache/tag.lua"
+      ['upcache.tag'] = "upcache/tag.lua",
+      ['upcache.common'] = "upcache/common.lua"
    },
    copy_directories = { "nginx" }
 }
