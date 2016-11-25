@@ -48,7 +48,7 @@ app.post("/login", function(req, res, next) {
 			},
 			[`user-${user.id}`]: true
 		};
-		scope.login(res, user);
+		scope.login(res, user); // this sets a cookie, scope.sign(user) returns signed bearer
 	});
 });
 
