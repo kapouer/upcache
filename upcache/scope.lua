@@ -1,14 +1,16 @@
 local jwt = require 'resty.jwt'
-local json = require "cjson.safe"
-local mp = require 'MessagePack'
+local json = require 'cjson.safe'
+
+local common = require 'upcache.common'
+
 local module = {}
+
 local log = ngx.log
 local ERR = ngx.ERR
 local INFO = ngx.INFO
-local format = string.format
 
-local HEADER_R = "X-Upcache-Scope"
-local HEADER_P = "X-Upcache-Key-Handshake"
+local HEADER_R = common.prefixHeader .. "-Scope"
+local HEADER_P = common.prefixHeader .. "-Key-Handshake"
 
 -- star is voluntarily removed from that pattern
 local quotepattern = '(['..("%^$().[]+-?"):gsub("(.)", "%%%1")..'])'
@@ -76,15 +78,11 @@ local function build_key(key, restrictions, scopes)
 end
 
 local function get_restrictions(key)
-	local pac = ngx.shared.upcacheRestrictions:get(key)
-	if pac == nil then
-		return nil
-	end
-	return mp.unpack(pac)
+	return common.get_variants(key, 'restrictions')
 end
 
 local function update_restrictions(key, data)
-	ngx.shared.upcacheRestrictions:set(key, mp.pack(data))
+	common.set_variants(key, 'restrictions', data)
 	return data
 end
 

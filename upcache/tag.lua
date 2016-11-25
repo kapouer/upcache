@@ -1,10 +1,11 @@
-local mp = require 'MessagePack'
+local common = require "upcache.common"
+
 local module = {}
+
 local log = ngx.log
 local ERR = ngx.ERR
-local format = string.format
 
-local HEADER = "X-Upcache-Tag"
+local HEADER = common.prefixHeader .. "-Tag"
 -- monotonous version prefix - prevents key conflicts between nginx reboots
 local MVP = ngx.time()
 
@@ -23,26 +24,8 @@ local function build_key(key, variants)
 	return nkey
 end
 
-local function get_variants(key)
-	local pac = ngx.shared.upcacheVariants:get(key)
-	if pac == nil then
-		return nil
-	end
-	return mp.unpack(pac)
-end
-
-local function update_variants(key, what, data)
-	local vars = get_variants(key)
-	if vars == nil then
-		vars = {}
-	end
-	vars[what] = data
-	ngx.shared.upcacheVariants:set(key, mp.pack(vars))
-	return vars
-end
-
 function module.get(key)
-	return build_key(key, get_variants(key))
+	return build_key(key, common.get_variants(key, 'tags'))
 end
 
 function module.set(key, headers)
@@ -65,7 +48,7 @@ function module.set(key, headers)
 		end
 	end
 	table.sort(tags)
-	local variants = update_variants(key, 'tags', tags)
+	local variants = common.set_variants(key, 'tags', tags)
 	return build_key(key, variants)
 end
 
