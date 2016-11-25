@@ -4,7 +4,7 @@ local cacheTag = require "upcache.tag"
 
 local HEADER = "X-Upcache"
 
-module._VERSION = "0.4"
+module._VERSION = "0.5"
 
 function module.request()
 	ngx.req.set_header(HEADER, module._VERSION)
