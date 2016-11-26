@@ -152,11 +152,14 @@ Scope.prototype.sign = function(user, opts) {
 
 Scope.prototype.login = function(res, user, opts) {
 	var bearer = this.sign(user, opts);
-	if (res) res.cookie('bearer', bearer, {
-		maxAge: opts.maxAge * 1000,
-		httpOnly: true,
-		path: '/'
-	});
+	if (res) {
+		opts = Object.assign({}, this.config, opts);
+		res.cookie('bearer', bearer, {
+			maxAge: opts.maxAge * 1000,
+			httpOnly: true,
+			path: '/'
+		});
+	}
 	return bearer;
 };
 
