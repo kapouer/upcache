@@ -2,6 +2,7 @@ var debug = require('debug')('upcache:scope');
 
 var jwt = require('jsonwebtoken');
 var cookie = require('cookie');
+var HttpError = require('http-errors');
 
 var common = require('./common');
 
@@ -131,11 +132,9 @@ Scope.prototype.restrict = function() {
 		if (grants) {
 			debug("grants", grants);
 		} else if (!user || !user.scopes) {
-			err = new Error("No user, or no user scopes");
-			err.statusCode = config.unauthorized;
+			err = new HttpError.Unauthorized("No user, or no user scopes");
 		} else {
-			err = new Error("No matching user scope found");
-			err.statusCode = config.forbidden;
+			err = new HttpError.Forbidden("No matching user scope found");
 		}
 		next(err);
 	};
