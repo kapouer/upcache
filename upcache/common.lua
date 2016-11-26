@@ -13,7 +13,7 @@ function module.get_variants(key, what)
 end
 
 function module.set_variants(key, what, data)
-	local vars = get_variants(key)
+	local vars = module.get_variants(key)
 	if vars == nil then
 		vars = {}
 	end

@@ -9,10 +9,8 @@ local tagHeader = common.prefixHeader .. "-Tag"
 -- monotonous version prefix - prevents key conflicts between nginx reboots
 local MVP = ngx.time()
 
-local function build_key(key, variants)
-	if variants == nil then return key end
-	local tags = variants.tags
-	if tags == nil then	return key end
+local function build_key(key, tags)
+	if tags == nil then return key end
 	local nkey = key
 	local mtags = ngx.shared.upcacheTags
 	local tagval
@@ -48,8 +46,8 @@ function module.set(key, headers)
 		end
 	end
 	table.sort(tags)
-	local variants = common.set_variants(key, 'tags', tags)
-	return build_key(key, variants)
+	common.set_variants(key, 'tags', tags)
+	return build_key(key, tags)
 end
 
 return module;
