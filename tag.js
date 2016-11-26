@@ -5,7 +5,7 @@ require('express-cache-response-directive')()(null, ctrl, function() {});
 
 var common = require('./common');
 
-var headerTag = 'X-Upcache-Tag';
+var headerTag = common.prefixHeader + '-Tag';
 
 module.exports = tagFn;
 
@@ -48,7 +48,7 @@ function tagFn() {
 		// prevent conditional requests if proxy is caching
 		// it would have been done in the proxy, after a cache miss, if
 		// current proxy allowed that easily
-		if (req.get(common.headerProxy)) {
+		if (req.get(common.prefixHeader)) {
 			// TODO deal with If-Match, In-Unmodified-Since, If-Range
 			delete req.headers["if-none-match"];
 			delete req.headers["if-modified-since"];

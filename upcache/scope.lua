@@ -9,8 +9,8 @@ local log = ngx.log
 local ERR = ngx.ERR
 local INFO = ngx.INFO
 
-local HEADER_R = common.prefixHeader .. "-Scope"
-local HEADER_P = common.prefixHeader .. "-Key-Handshake"
+local scopeHeader = common.prefixHeader .. "-Scope"
+local handshakeHeader = common.prefixHeader .. "-Key-Handshake"
 
 -- star is voluntarily removed from that pattern
 local quotepattern = '(['..("%^$().[]+-?"):gsub("(.)", "%%%1")..'])'
@@ -102,18 +102,18 @@ end
 local function requestHandshake(host)
 	local publicKey = ngx.shared.upcachePublicKeys:get(host)
 	if publicKey == nil then
-		ngx.req.set_header(HEADER_P, "1")
+		ngx.req.set_header(handshakeHeader, "1")
 	end
 	return publicKey
 end
 module.requestHandshake = requestHandshake
 
 local function responseHandshake(host, headers)
-	local publicKey = headers[HEADER_P]
+	local publicKey = headers[handshakeHeader]
 	if publicKey ~= nil then
 		log(INFO, "response sets public key on '", host, "'")
 		publicKey = ngx.unescape_uri(publicKey)
-		headers[HEADER_P] = nil
+		headers[handshakeHeader] = nil
 		ngx.shared.upcachePublicKeys:set(host, publicKey)
 	else
 		publicKey = ngx.shared.upcachePublicKeys:get(host)
@@ -135,7 +135,7 @@ function module.get(key, vars)
 end
 
 function module.set(key, vars, headers)
-	local restrictions = headers[HEADER_R];
+	local restrictions = headers[scopeHeader];
 	if restrictions == nil then return key end
 	if type(restrictions) == "string" then
 		restrictions = {restrictions}

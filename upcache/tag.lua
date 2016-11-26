@@ -5,7 +5,7 @@ local module = {}
 local log = ngx.log
 local ERR = ngx.ERR
 
-local HEADER = common.prefixHeader .. "-Tag"
+local tagHeader = common.prefixHeader .. "-Tag"
 -- monotonous version prefix - prevents key conflicts between nginx reboots
 local MVP = ngx.time()
 
@@ -29,7 +29,7 @@ function module.get(key)
 end
 
 function module.set(key, headers)
-	local tags = headers[HEADER];
+	local tags = headers[tagHeader];
 	if tags == nil then return key end
 	if type(tags) ~= "table" then
 		tags = {tags}

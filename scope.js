@@ -18,8 +18,8 @@ function Scope(obj) {
 	}, obj);
 }
 
-Scope.headerHandshake = 'X-Upcache-Key-Handshake';
-Scope.headerScope = 'X-Upcache-Scope';
+Scope.headerHandshake = common.prefixHeader + '-Key-Handshake';
+Scope.headerScope = common.prefixHeader + '-Scope';
 
 // facility for checking request against some scopes
 Scope.prototype.allowed = function(req) {
