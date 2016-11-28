@@ -20,17 +20,6 @@ function Scope(obj) {
 Scope.headerHandshake = common.prefixHeader + '-Key-Handshake';
 Scope.headerScope = common.prefixHeader + '-Scope';
 
-// facility for checking request against some scopes
-Scope.prototype.allowed = function(req) {
-	var action = getAction(method);
-	var list = restrictionsByAction(action, Array.from(arguments).slice(1));
-	if (list) list = list.map(function(r) {
-		return common.replacements(r, req.params);
-	});
-	sendHeaders(req.res, list);
-	return authorize(action, list, this.parseBearer(req));
-};
-
 function restrictionsByAction(action, list) {
 	if (!action) return [];
 	if (!Array.isArray(list)) list = [list];
@@ -107,25 +96,37 @@ function sendHeaders(res, list) {
 	}
 };
 
+Scope.prototype.test = function(req, restrictions) {
+	var args = Array.from(arguments);
+	if (args.length > 2) restrictions = args.slice(1);
+	if (!Array.isArray(restrictions)) restrictions = [restrictions];
+	var user = this.parseBearer(req);
+	var action = getAction(req.method);
+	var list = restrictionsByAction(action, restrictions);
+	var headers = [];
+	if (list) list = list.map(function(item) {
+		var ritem = common.replacements(item, req.params);
+		var rheader = ritem == item ? item : common.replacements(item, req.params, '*');
+		headers.push(rheader);
+		return ritem;
+	});
+	sendHeaders(req.res, headers);
+	return authorize(action, list, user);
+};
+
 Scope.prototype.restrict = function() {
-	var restrictions = Array.from(arguments);
+	var args = Array.from(arguments);
 	var config = this.config;
 	var self = this;
 	// TODO memoize restrictionsByAction
 	return function(req, res, next) {
-		var user = self.parseBearer(req);
-		var action = getAction(req.method);
 		if (req.get(Scope.headerHandshake) == '1' || !self.publicKeySent) {
 			debug("sending public key to proxy");
 			self.publicKeySent = true;
 			res.set(Scope.headerHandshake, encodeURIComponent(config.publicKey));
 		}
-		var list = restrictionsByAction(action, restrictions);
-		if (list) list = list.map(function(r) {
-			return common.replacements(r, req.params);
-		});
-		sendHeaders(res, list);
-		var grants = authorize(action, list, user);
+		var grants = self.test(req, args);
+		var user = self.parseBearer(req);
 		var err;
 		if (grants) {
 			debug("grants", grants);
