@@ -109,6 +109,11 @@ module.exports.post = function(uri, data) {
 	});
 };
 
+module.exports.errorHandler = function(err, req, res, next) {
+	if (err.statusCode == 401 || err.statusCode == 403) return res.sendStatus(err.statusCode);
+	else return next(err);
+};
+
 function FilterPipe(matcher, grep) {
 	Transform.call(this);
 	this.matcher = matcher;

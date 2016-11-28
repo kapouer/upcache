@@ -94,6 +94,8 @@ describe("Tag", function suite() {
 				date: new Date()
 			});
 		});
+
+		app.use(runner.errorHandler);
 	});
 
 	after(function(done) {

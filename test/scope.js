@@ -124,10 +124,7 @@ describe("Scope", function suite() {
 			res.send({id: parseInt(req.params.id)});
 		});
 
-		app.use(function(err, req, res, next) {
-			if (err.statusCode == 401 || err.statusCode == 403) return res.sendStatus(err.statusCode);
-			else return next(err);
-		});
+		app.use(runner.errorHandler);
 	});
 
 	after(function(done) {

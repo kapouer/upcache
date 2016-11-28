@@ -123,6 +123,8 @@ describe("Tag and Scope", function suite() {
 		app.post(scopeDependentTag, tag("usertag18"), function(req, res, next) {
 			res.sendStatus(200);
 		});
+
+		app.use(runner.errorHandler);
 	});
 
 	after(function(done) {

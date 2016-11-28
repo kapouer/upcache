@@ -81,6 +81,8 @@ describe("Scope", function suite() {
 				date: new Date()
 			});
 		});
+
+		app.use(runner.errorHandler);
 	});
 
 	afterEach(function(done) {
