@@ -121,16 +121,20 @@ to a "readtwo" scope, it is simpler to declare a "public" permission and
 automatically log all users with it.
 
 
-Checking restrictions can also be called manually using `allowed` method:
+Checking restrictions can also be called manually using `test` method,
+which accepts multiple parameters, or an array for the list of scopes to test.
+
 ```
 app.get("/api/user", function(req, res, next) {
-	if (scope.allowed(req, "permA", "permB")) {
+	if (scope.test(req, "permA", "permB")) {
 		next();
 	} else {
 		res.sendStatus(403);
 	}
 }, appMw);
 ```
+
+Note: `test` sends headers.
 
 
 Bearer scopes
