@@ -60,7 +60,9 @@ app.get('/api/user', scope.restrict("&user-*", "admin"), myMidleware);
 Restrictions
 ------------
 
-A restriction is an alphanumeric string.
+A restriction is an alphanumeric string that defines two different things:
+- how the application authorizes the current request
+- how the proxy builds a key for a given request
 
 Multiple permissions can be given as arguments,
 in which case the bearer must match at least one of them to get access.
@@ -70,6 +72,15 @@ A restriction can be made mandatory by prefixing it with a `&`.
 A restriction can contain a wildcard `*` which match zero or more chars.
 In this case, all scopes matching the restriction will be used to build the
 resource cache key.
+
+A restriction can contain a parameter replacement `:name` which will be
+replaced if any parameter with that name is defined in `req.params`.
+In that case, the restriction sent to the proxy replaces the placeholder by
+a wildcard.
+
+
+Restrictions and actions
+------------------------
 
 A restriction can also be defined for each type of action, where actions are
 mapped like this:
@@ -121,20 +132,27 @@ to a "readtwo" scope, it is simpler to declare a "public" permission and
 automatically log all users with it.
 
 
-Checking restrictions can also be called manually using `test` method,
-which accepts multiple parameters, or an array for the list of scopes to test.
+Methods
+-------
 
-```
-app.get("/api/user", function(req, res, next) {
-	if (scope.test(req, "permA", "permB")) {
-		next();
-	} else {
-		res.sendStatus(403);
-	}
-}, appMw);
-```
+req, res are the parameters received by express middleware;
 
-Note: `test` sends headers.
+user is an object expected to have a `scopes` array of strings.
+
+
+- scope.sign(user, options)  
+  returns a jwt
+- scope.login(res, user, options)  
+  sign, sets cookie
+- scope.logout(res)  
+  unset cookie
+- scope.restrict(perms...)  
+  returns a middleware that sends 401/403 or let through  
+  sets response headers for proxy
+- scope.test(req, perms...)  
+  checks this request, returns false if access is not granted, or else the list
+  of granted permissions  
+  sets response headers for proxy
 
 
 Bearer scopes
