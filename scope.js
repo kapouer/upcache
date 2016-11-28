@@ -13,9 +13,7 @@ module.exports = function(obj) {
 function Scope(obj) {
 	this.publicKeySent = false;
 	this.config = Object.assign({
-		algorithm: 'RS256',
-		forbidden: 403,
-		unauthorized: 401
+		algorithm: 'RS256'
 	}, obj);
 }
 

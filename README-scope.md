@@ -31,10 +31,7 @@ var scope = require('upcache/scope')({
 	algorithm: 'RS256', // optional
 	issuer: the application name,
 	maxAge: age in seconds,
-	userProperty: "user", // optional, populates req[userProperty] if set
-	// errors are passed to next(err) with err.statusCode having these default values
-	forbidden: 403,
-	unauthorized: 401
+	userProperty: "user" // optional, populates req[userProperty] if set
 });
 
 app.post("/login", function(req, res, next) {
