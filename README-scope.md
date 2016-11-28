@@ -64,14 +64,17 @@ A restriction is an alphanumeric string that defines two different things:
 - how the application authorizes the current request
 - how the proxy builds a key for a given request
 
-Multiple permissions can be given as arguments,
+Multiple restrictions can be given as arguments,
 in which case the bearer must match at least one of them to get access.
 
-A restriction can be made mandatory by prefixing it with a `&`.
+A restriction can be made mandatory by prefixing it with a `&`; this is only
+useful when multiple restrictions are given since at least one of them must be
+matched.
 
 A restriction can contain a wildcard `*` which match zero or more chars.
 In this case, all scopes matching the restriction will be used to build the
 resource cache key.
+This is useful when multiple users see different versions of the same url.
 
 A restriction can contain a parameter replacement `:name` which will be
 replaced if any parameter with that name is defined in `req.params`.
