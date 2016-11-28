@@ -53,7 +53,6 @@ describe("Scope", function suite() {
 			var givemeScope = req.query.scope;
 			if (givemeScope && !Array.isArray(givemeScope)) givemeScope = [givemeScope];
 			var scopes = {
-				"user-44": true,
 				bookWriter: {
 					write: true
 				},
@@ -113,6 +112,21 @@ describe("Scope", function suite() {
 				value: (req.path || '/').substring(1),
 				date: new Date()
 			});
+		});
+
+		app.get("/user/:id", function(req, res, next) {
+			if (scope.test(req, "user-" + req.params.id)) res.send({id: parseInt(req.params.id)});
+			else res.sendStatus(403);
+		});
+
+		app.get("/userstar/:id", scope.restrict('user-:id'), function(req, res, next) {
+			count(req, 1);
+			res.send({id: parseInt(req.params.id)});
+		});
+
+		app.use(function(err, req, res, next) {
+			if (err.statusCode == 401 || err.statusCode == 403) return res.sendStatus(err.statusCode);
+			else return next(err);
 		});
 	});
 
@@ -401,4 +415,124 @@ describe("Scope", function suite() {
 			res.body.date.should.not.equal(firstDate);
 		});
 	});
+
+	it("should log in as user and be authorized to read user, then be unauthorized to read another user (without proxy)", function() {
+		var headers = {};
+		var req = {
+			headers: headers,
+			port: ports.app,
+			path: '/user/45'
+		};
+		var firstDate;
+		return runner.post({
+			port: ports.app,
+			path: '/login?scope=user-45'
+		}).then(function(res) {
+			res.headers.should.have.property('set-cookie');
+			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+			return runner.get(req);
+		}).then(function(res) {
+			res.headers.should.have.property('x-upcache-scope', 'user-45');
+			res.statusCode.should.equal(200);
+			res.body.id.should.equal(45);
+			req.path += '1';
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(403);
+		});
+	});
+
+	it("should log in as user and be authorized to read user, then be unauthorized to read another user (with proxy)", function() {
+		var headers = {};
+		var req = {
+			headers: headers,
+			port: ports.ngx,
+			path: '/user/45'
+		};
+		var firstDate;
+		return runner.post({
+			port: ports.ngx,
+			path: '/login?scope=user-45'
+		}).then(function(res) {
+			res.headers.should.have.property('set-cookie');
+			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+			return runner.get(req);
+		}).then(function(res) {
+			res.headers.should.have.property('x-upcache-scope', 'user-45');
+			res.statusCode.should.equal(200);
+			res.body.id.should.equal(45);
+			req.path += '1';
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(403);
+		});
+	});
+
+	it("should log in as user and be authorized to read user, then be unauthorized to read another user using replacements (without proxy)", function() {
+		var headers = {};
+		var req = {
+			headers: headers,
+			port: ports.app,
+			path: '/userstar/46'
+		};
+		var firstDate;
+		return runner.post({
+			port: ports.app,
+			path: '/login?scope=user-46'
+		}).then(function(res) {
+			res.headers.should.have.property('set-cookie');
+			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+			return runner.get(req);
+		}).then(function(res) {
+			res.headers.should.have.property('x-upcache-scope', 'user-*');
+			res.statusCode.should.equal(200);
+			res.body.id.should.equal(46);
+			return runner.get(req);
+		}).then(function(res) {
+			count(req).should.equal(2);
+			res.statusCode.should.equal(200);
+			res.body.id.should.equal(46);
+			req.path += '1';
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(403);
+		});
+	});
+
+	it("should log in as user and be authorized to read user, then be unauthorized to read another user using replacements (with proxy)", function() {
+		var headers = {};
+		var req = {
+			headers: headers,
+			port: ports.ngx,
+			path: '/userstar/46'
+		};
+		var firstDate;
+		return runner.post({
+			port: ports.ngx,
+			path: '/login?scope=user-46'
+		}).then(function(res) {
+			res.headers.should.have.property('set-cookie');
+			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+			return runner.get(req);
+		}).then(function(res) {
+			res.headers.should.have.property('x-upcache-scope', 'user-*');
+			res.statusCode.should.equal(200);
+			res.body.id.should.equal(46);
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(200);
+			res.body.id.should.equal(46);
+			count(req).should.equal(1);
+			req.path += '1';
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(403);
+		});
+	});
+
+
 });
