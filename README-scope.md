@@ -74,10 +74,12 @@ matched.
 A restriction can contain a wildcard `*` which match zero or more chars.
 In this case, all scopes matching the restriction will be used to build the
 resource cache key.
-This is useful when multiple users see different versions of the same url.
+This is useful when multiple users see different versions of the same url;
+it avoids tracking lots of restrictions variants for a given url.
 
 A restriction can contain a parameter replacement `:name` which will be
 replaced if any parameter with that name is defined in `req.params`.
+The actual restriction will be the one after replacement.
 
 
 Restrictions and actions
