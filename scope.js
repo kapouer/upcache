@@ -105,12 +105,9 @@ Scope.prototype.test = function(req, restrictions) {
 	var list = restrictionsByAction(action, restrictions);
 	var headers = [];
 	if (list) list = list.map(function(item) {
-		var ritem = common.replacements(item, req.params);
-		var rheader = ritem == item ? item : common.replacements(item, req.params, '*');
-		headers.push(rheader);
-		return ritem;
+		return common.replacements(item, req.params);
 	});
-	sendHeaders(req.res, headers);
+	sendHeaders(req.res, list);
 	return authorize(action, list, user);
 };
 

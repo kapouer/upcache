@@ -484,7 +484,7 @@ describe("Scope", function suite() {
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-scope', 'user-*');
+			res.headers.should.have.property('x-upcache-scope', 'user-46');
 			res.statusCode.should.equal(200);
 			res.body.id.should.equal(46);
 			return runner.get(req);
@@ -516,7 +516,7 @@ describe("Scope", function suite() {
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-scope', 'user-*');
+			res.headers.should.have.property('x-upcache-scope', 'user-46');
 			res.statusCode.should.equal(200);
 			res.body.id.should.equal(46);
 			return runner.get(req);

@@ -75,8 +75,6 @@ resource cache key.
 
 A restriction can contain a parameter replacement `:name` which will be
 replaced if any parameter with that name is defined in `req.params`.
-In that case, the restriction sent to the proxy replaces the placeholder by
-a wildcard.
 
 
 Restrictions and actions
