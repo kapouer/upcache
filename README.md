@@ -12,6 +12,20 @@ This implementation can build cache keys for
 by exchanging headers in existing HTTP requests/responses between proxy and application.
 
 
+Docker
+------
+
+```
+docker build github.com/kapouer/upcache.git
+docker run -p 3001:3001 --net="host" -t kapouer/upcache
+```
+
+These docker commands will be useful: `docker ps`, `docker images`, `docker stop`, and
+```
+docker run --rm -it kapouer/upcache bash -il
+```
+
+
 Requirements
 ------------
 
