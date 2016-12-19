@@ -1,6 +1,11 @@
-# How to build: docker build -t kapouer/upcache .
-# How to run: docker run -p 3001:3001 --net="host" -t kapouer/upcache
-# How to open a shell: docker run --rm -it kapouer/upcache bash -il
+# How to
+# build  `docker build -t kapouer/upcache .`
+# run    `docker run -p 3001:3001 --net="host" -t kapouer/upcache`
+# ps     `docker ps`
+# stop   `docker stop containerName`
+# images `docker images`
+# remove `docker rmi -f imageId`
+# shell  `docker run --rm -it kapouer/upcache bash -il`
 
 # debian stretch
 FROM debian:stretch-slim
