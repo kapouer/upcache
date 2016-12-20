@@ -47,7 +47,7 @@ USER user
 npm install
 
 USER root
-RUN apt-get purge -y luarocks unzip wget gnupg apt-transport-https
+RUN apt-get purge -y luarocks unzip wget gnupg apt-transport-https npm
 RUN rm -rf /var/lib/apt/*
 
 # expose app port
