@@ -44,7 +44,7 @@ WORKDIR /home/user
 COPY . .
 
 USER user
-npm install
+RUN npm install
 
 USER root
 RUN apt-get purge -y luarocks unzip wget gnupg apt-transport-https npm
