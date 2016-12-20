@@ -27,15 +27,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   memcached \
   luarocks unzip \
   lua-cjson \
-  nodejs nodejs-legacy
+  nodejs nodejs-legacy npm
 
 RUN apt-get clean
 
 RUN luarocks install upcache
-
-RUN apt-get purge -y luarocks unzip wget gnupg apt-transport-https
-
-RUN rm -rf /var/lib/apt/*
 
 # machine-id
 RUN echo "12e11ceb84fefe777a02ef52000007db" > /etc/machine-id
@@ -46,6 +42,13 @@ RUN useradd -m user
 WORKDIR /home/user
 
 COPY . .
+
+USER user
+npm install
+
+USER root
+RUN apt-get purge -y luarocks unzip wget gnupg apt-transport-https
+RUN rm -rf /var/lib/apt/*
 
 # expose app port
 EXPOSE 3001
