@@ -83,14 +83,18 @@ local function update_restrictions(key, data)
 end
 
 local function get_scopes(publicKey, bearer)
-	if bearer == nil then return nil end
+	if bearer == nil then
+		return nil
+	end
 	local jwt_obj = jwt:load_jwt(bearer)
 	local verified = jwt:verify_jwt_obj(publicKey, jwt_obj)
 	if jwt_obj == nil or verified == false then
 		return nil
 	end
-	if jwt_obj.payload then return jwt_obj.payload.scopes
-	else return nil
+	if jwt_obj.payload then
+		return jwt_obj.payload.scopes
+	else
+		return nil
 	end
 end
 
