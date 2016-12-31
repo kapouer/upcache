@@ -1,13 +1,9 @@
 local jwt = require 'resty.jwt'
-local json = require 'cjson.safe'
 
 local common = require 'upcache.common'
+local console = common.console
 
 local module = {}
-
-local log = ngx.log
-local ERR = ngx.ERR
-local INFO = ngx.INFO
 
 local scopeHeader = common.prefixHeader .. "-Scope"
 local handshakeHeader = common.prefixHeader .. "-Key-Handshake"
@@ -21,7 +17,7 @@ end
 
 local function logKey(from, what, key, data)
 	if string.find(key, quoteReg(what) .. "$") == nil then return end
-	log(INFO, from, " ", key, json.encode(data))
+	console.info(from, " ", key, console.encode(data))
 end
 
 local function authorize(restrictions, scopes)
@@ -91,7 +87,6 @@ local function get_scopes(publicKey, bearer)
 	local jwt_obj = jwt:load_jwt(bearer)
 	local verified = jwt:verify_jwt_obj(publicKey, jwt_obj)
 	if jwt_obj == nil or verified == false then
-		log(ERR, "no valid jwt", json.encode(jwt_obj))
 		return nil
 	end
 	if jwt_obj.payload then return jwt_obj.payload.scopes
@@ -111,7 +106,7 @@ module.requestHandshake = requestHandshake
 local function responseHandshake(host, headers)
 	local publicKey = headers[handshakeHeader]
 	if publicKey ~= nil then
-		log(INFO, "response sets public key on '", host, "'")
+		console.info("response sets public key on '", host, "'")
 		publicKey = ngx.unescape_uri(publicKey)
 		headers[handshakeHeader] = nil
 		ngx.shared.upcachePublicKeys:set(host, publicKey)

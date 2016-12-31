@@ -1,9 +1,7 @@
 local common = require "upcache.common"
+local console = common.console
 
 local module = {}
-
-local log = ngx.log
-local ERR = ngx.ERR
 
 local tagHeader = common.prefixHeader .. "-Tag"
 -- monotonous version prefix - prevents key conflicts between nginx reboots
