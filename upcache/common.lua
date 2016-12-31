@@ -28,7 +28,11 @@ function module.get_variants(key, what)
 	if pac == nil then
 		return nil
 	end
-	return mp.unpack(pac)[what]
+	local unpac = mp.unpack(pac)
+	if what ~= nil then
+		unpac = unpac[what]
+	end
+	return unpac
 end
 
 function module.set_variants(key, what, data)
