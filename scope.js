@@ -3,6 +3,7 @@ var debug = require('debug')('upcache:scope');
 var jwt = require('jsonwebtoken');
 var cookie = require('cookie');
 var HttpError = require('http-errors');
+var ms = require('ms');
 
 var common = require('./common');
 
@@ -151,7 +152,7 @@ Scope.prototype.login = function(res, user, opts) {
 	if (res) {
 		opts = Object.assign({}, this.config, opts);
 		res.cookie('bearer', bearer, {
-			maxAge: opts.maxAge * 1000,
+			maxAge: milliseconds(opts.maxAge),
 			httpOnly: true,
 			path: '/'
 		});
@@ -201,3 +202,7 @@ Scope.prototype.parseBearer = function(req) {
 	return obj;
 };
 
+function milliseconds(s) {
+	if (typeof s == "string") return ms(s);
+	else if (typeof s == "number") return s * 1000;
+}

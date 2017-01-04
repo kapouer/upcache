@@ -57,7 +57,7 @@ A middleware for disabling cache is also available with `tag.disable()`.
 
 ```
 app.get('/api/stats', tag.for('1d'), appMw);
-app.get('/api/user', tag('user-*').for('10mn'), appMw);
+app.get('/api/user', tag('user-*').for('10min'), appMw);
 app.get('/api/user', tag('user-*').for(3600), appMw);
 
 app.get('/trigger', tag.disable(), ...); // disable cache
