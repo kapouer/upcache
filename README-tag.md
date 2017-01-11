@@ -82,3 +82,45 @@ purged - requests keys just need to be changed.
 
 For now only the proxy knows the tags values.
 
+
+Golden rule
+-----------
+
+Never set a max-age on a mutable resource (unless you know it's okay to serve it perempted),
+only set a tag.
+
+
+Sample setup
+------------
+
+```
+// application-level tag, changes when application version changes
+app.get('*', tag('app'));
+// static files tag, changes upon application restart
+app.get('*.*', tag('static'), express.static(...));
+// dynamic tag, changes upon non-GET calls
+app.use('/api/*', tag('dynamic'));
+```
+
+and invalidation of that tag can take place upon application restart:
+```
+app.post('/.upcache', function(req, res, next) {
+  if (config.version != config.previousVersion) {
+    console.info(`app tag changes because version changes from ${config.previousVersion} to ${config.version}`);
+    config.previousVersion = config.version;
+    tag('app')(req, res, next);
+  } else {
+    next();
+  }
+}, function(req, res, next) {
+  if (!config.invalidated) {
+    console.info(`static tag changes after restart`);
+    config.invalidated = true;
+    tag('static')(req, res, next);
+  } else {
+    next();
+  }
+}, function(req, res) {
+  res.sendStatus(204);
+});
+```
