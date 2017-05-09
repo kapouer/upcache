@@ -174,6 +174,7 @@ function getAction(method) {
 		PUT: "save",
 		PATCH: "save",
 		POST: "add",
+		COPY: "add",
 		DELETE: "del"
 	}[method];
 }
