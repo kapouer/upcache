@@ -1,4 +1,5 @@
 local jwt = require 'resty.jwt'
+local validators = require "resty.jwt-validators"
 
 local common = require 'upcache.common'
 local console = common.console
@@ -82,12 +83,14 @@ local function update_restrictions(key, data)
 	return data
 end
 
-local function get_scopes(publicKey, bearer)
+local function get_scopes(publicKey, bearer, host)
 	if bearer == nil then
 		return nil
 	end
 	local jwt_obj = jwt:load_jwt(bearer)
-	local verified = jwt:verify_jwt_obj(publicKey, jwt_obj)
+	local verified = jwt:verify_jwt_obj(publicKey, jwt_obj, {
+		iss = validators.equals(host)
+	})
 	if jwt_obj == nil or verified == false then
 		return nil
 	end
@@ -130,7 +133,7 @@ function module.get(key, vars)
 	if publicKey == nil then
 		return key
 	end
-	return build_key(key, get_restrictions(key), get_scopes(publicKey, bearer))
+	return build_key(key, get_restrictions(key), get_scopes(publicKey, bearer, vars.host))
 end
 
 function module.set(key, vars, headers)
@@ -146,7 +149,7 @@ function module.set(key, vars, headers)
 		return key
 	end
 
-	return build_key(key, restrictions, get_scopes(publicKey, vars.cookie_bearer))
+	return build_key(key, restrictions, get_scopes(publicKey, vars.cookie_bearer, vars.host))
 end
 
 return module;

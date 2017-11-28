@@ -13,3 +13,8 @@
 - factored restrict and allowed, renamed allowed to `test`
 - parametrized scopes now correctly return wildcard headers
 
+0.7.0
+=====
+
+- issuer is the hostname and cannot be configured
+

@@ -137,21 +137,22 @@ Scope.prototype.restrict = function() {
 	};
 };
 
-Scope.prototype.sign = function(user, opts) {
+Scope.prototype.sign = function(req, user, opts) {
 	if (!user.scopes) debug("login user without scopes");
 	opts = Object.assign({}, this.config, opts);
+	if (!req.hostname) throw new Error("Missing hostname in req");
 	return jwt.sign(user, opts.privateKey, {
 		expiresIn: opts.maxAge,
 		algorithm: opts.algorithm,
-		issuer: opts.issuer
+		issuer: req.hostname
 	});
 };
 
 Scope.prototype.login = function(res, user, opts) {
 	if (res) {
-		opts = Object.assign({}, this.config, {issuer: res.req.hostname}, opts);
+		opts = Object.assign({}, this.config, opts);
 	}
-	var bearer = this.sign(user, opts);
+	var bearer = this.sign(res.req, user, opts);
 	if (res) res.cookie('bearer', bearer, {
 		maxAge: milliseconds(opts.maxAge),
 		httpOnly: true,
@@ -193,7 +194,7 @@ Scope.prototype.parseBearer = function(req) {
 	try {
 		obj = jwt.verify(bearer, config.publicKey, {
 			algorithm: config.algorithm,
-			issuer: config.issuer || req.hostname
+			issuer: req.hostname
 		});
 	} catch(ex) {
 		debug(ex, bearer);

@@ -99,11 +99,17 @@ describe("Scope", function suite() {
 			path: testPathWildcard
 		};
 		var firstDate;
+		var fakeRes = {
+			req: {
+				hostname: "locahost"
+			},
+			cookie: function() {}
+		};
 		return runner.post({
 			port: ports.ngx,
 			path: testPathWildcardMultiple,
 			headers: {
-				Cookie: cookie.serialize("bearer", scope.login({cookie: function() {}}, {scopes: {
+				Cookie: cookie.serialize("bearer", scope.login(fakeRes, {scopes: {
 					auth: true
 				}}))
 			}

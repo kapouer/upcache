@@ -29,7 +29,6 @@ var scope = require('upcache/scope')({
 	publicKey: <rsa public key>,
 	privateKey: <rsa private key>,
 	algorithm: 'RS256', // optional
-	issuer: the application name,
 	maxAge: age in seconds or string interpreted by 'zeit/ms' module,
 	userProperty: "user" // optional, populates req[userProperty] if set
 });
@@ -143,10 +142,10 @@ req, res are the parameters received by express middleware;
 user is an object expected to have a `scopes` array of strings.
 
 
-- scope.sign(user, options)  
-  returns a jwt
+- scope.sign(req, user, options)  
+  sign user with hostname as issuer, returns a jwt
 - scope.login(res, user, options)  
-  sign, sets cookie
+  calls sign and sets cookie
 - scope.logout(res)  
   unset cookie
 - scope.restrict(perms...)  
