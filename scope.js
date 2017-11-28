@@ -148,15 +148,15 @@ Scope.prototype.sign = function(user, opts) {
 };
 
 Scope.prototype.login = function(res, user, opts) {
-	var bearer = this.sign(user, opts);
 	if (res) {
-		opts = Object.assign({}, this.config, opts);
-		res.cookie('bearer', bearer, {
-			maxAge: milliseconds(opts.maxAge),
-			httpOnly: true,
-			path: '/'
-		});
+		opts = Object.assign({}, this.config, {issuer: res.req.hostname}, opts);
 	}
+	var bearer = this.sign(user, opts);
+	if (res) res.cookie('bearer', bearer, {
+		maxAge: milliseconds(opts.maxAge),
+		httpOnly: true,
+		path: '/'
+	});
 	return bearer;
 };
 
@@ -193,7 +193,7 @@ Scope.prototype.parseBearer = function(req) {
 	try {
 		obj = jwt.verify(bearer, config.publicKey, {
 			algorithm: config.algorithm,
-			issuer: config.issuer
+			issuer: config.issuer || req.hostname
 		});
 	} catch(ex) {
 		debug(ex, bearer);
