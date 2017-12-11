@@ -34,3 +34,5 @@ node_modules
 
 test/runner/.temp.conf
 test/fixtures/*.pem
+
+rocks/*
