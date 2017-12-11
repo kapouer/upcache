@@ -204,6 +204,10 @@ Scope.prototype.parseBearer = function(req) {
 	return obj;
 };
 
+Scope.prototype.serializeBearer = function(req, user, opts) {
+	return cookie.serialize('bearer', this.sign(req, user, opts));
+};
+
 function milliseconds(s) {
 	if (typeof s == "string") return ms(s);
 	else if (typeof s == "number") return s * 1000;
