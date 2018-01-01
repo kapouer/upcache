@@ -26,7 +26,7 @@ end
 
 function module.set(key, headers)
 	local tags = headers[tagHeader];
-	if tags == nil then return key end
+	if tags == nil then return nil end
 	if type(tags) ~= "table" then
 		tags = {tags}
 	end

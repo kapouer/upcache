@@ -16,7 +16,7 @@ function module.request()
 		cacheScope.requestHandshake(ngx.var.host)
 	end
 	nkeyReq = cacheTag.get(nkeyReq)
-	ngx.var.hashReq = ngx.md5(nkeyReq)
+	ngx.var.fetchKey = ngx.md5(nkeyReq)
 	ngx.log(ngx.INFO, "request key '", nkeyReq, "'")
 end
 
@@ -33,10 +33,12 @@ function module.response()
 		cacheScope.responseHandshake(ngx.var.host, ngx.header)
 	end
 	nkeyRes = cacheTag.set(nkeyRes, ngx.header)
-	if nkeyRes ~= keyRes then
-		ngx.var.hashRes = ngx.md5(nkeyRes)
+	if nkeyRes == nil then
+		ngx.var.storeSkip = 1
+	elseif nkeyRes ~= keyRes then
+		ngx.var.storeKey = ngx.md5(nkeyRes)
 	else
-		ngx.var.hashRes = ngx.var.hashReq
+		ngx.var.storeKey = ngx.var.fetchKey
 	end
 	ngx.log(ngx.INFO, "response key '", nkeyRes, "'")
 end
