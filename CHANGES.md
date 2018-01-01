@@ -18,3 +18,15 @@
 
 - issuer is the hostname and cannot be configured
 
+0.8.0
+=====
+
+- scope.serializeBearer(req, user, opts)
+- `make luarocks` installs lua modules in a local tree
+
+0.9.0
+=====
+
+- nothing is cached unless tagged
+- no particular peremption is set (used to be 1 day by default if nothing was set)
+
