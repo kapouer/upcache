@@ -18,6 +18,7 @@ describe("Tag", function suite() {
 	var testPath = '/tag-test';
 	var conditionalPath = "/conditional";
 	var conditionalPathNot = "/conditionalnot";
+	var untaggedPath = '/untagged';
 	var counters = {};
 
 	function count(uri, inc) {
@@ -93,6 +94,11 @@ describe("Tag", function suite() {
 				value: (req.path || '/').substring(1),
 				date: new Date()
 			});
+		});
+
+		app.get(untaggedPath, function(req, res, next) {
+			count(req, 1);
+			res.send("ok");
 		});
 
 		app.use(runner.errorHandler);
@@ -210,6 +216,23 @@ describe("Tag", function suite() {
 		}).then(function(res) {
 			res.statusCode.should.equal(304);
 			count(req).should.equal(1);
+		});
+	});
+
+	it("should not cache responses if not tagged by upstream", function() {
+		var headers = {};
+		var req = {
+			headers: headers,
+			port: ports.ngx,
+			path: untaggedPath
+		};
+		return runner.get(req).then(function(res) {
+			res.statusCode.should.equal(200);
+			count(req).should.equal(1);
+			return runner.get(req);
+		}).then(function(res) {
+			res.statusCode.should.equal(200);
+			count(req).should.equal(2);
 		});
 	});
 });

@@ -79,7 +79,7 @@ describe("Tag and Scope", function suite() {
 			res.send(req.get('x-upcache') ? "ok" : "not ok");
 		});
 
-		app.get(testPath, scope.restrict('bookReader', 'bookSecond'), function(req, res, next) {
+		app.get(testPath, tag('test'), scope.restrict('bookReader', 'bookSecond'), function(req, res, next) {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),

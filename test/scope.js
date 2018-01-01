@@ -13,6 +13,7 @@ var scope = require('../scope')({
 	maxAge: 3600,
 	issuer: "test"
 });
+var tag = require('../tag');
 
 var ports = {
 	app: 3000,
@@ -235,7 +236,7 @@ describe("Scope", function suite() {
 		});
 	});
 
-	it("should log in and get read access to a url and hit the cache with proxy", function() {
+	it("should log in and get read access to a url and not hit the cache with proxy", function() {
 		var headers = {};
 		var req = {
 			headers: headers,
@@ -259,7 +260,7 @@ describe("Scope", function suite() {
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			// because it should be a cache hit
-			count(req).should.equal(1);
+			count(req).should.equal(2);
 		});
 	});
 
@@ -523,7 +524,7 @@ describe("Scope", function suite() {
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			res.body.id.should.equal(46);
-			count(req).should.equal(1);
+			count(req).should.equal(2);
 			req.path += '1';
 			return runner.get(req);
 		}).then(function(res) {
