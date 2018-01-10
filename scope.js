@@ -139,6 +139,9 @@ Scope.prototype.restrict = function() {
 Scope.prototype.sign = function(req, user, opts) {
 	if (!user.scopes) debug("login user without scopes");
 	opts = Object.assign({}, this.config, opts);
+	if (opts.maxAge && typeof opts.maxAge != 'number') {
+		console.warn("upcache/scope.login: maxAge must be a number in seconds");
+	}
 	if (!req.hostname) throw new Error("Missing hostname in req");
 	return jwt.sign(user, opts.privateKey, {
 		expiresIn: opts.maxAge,
@@ -153,7 +156,7 @@ Scope.prototype.login = function(res, user, opts) {
 	}
 	var bearer = this.sign(res.req, user, opts);
 	if (res) res.cookie('bearer', bearer, {
-		maxAge: opts.maxAge,
+		maxAge: opts.maxAge * 1000,
 		httpOnly: true,
 		path: '/'
 	});

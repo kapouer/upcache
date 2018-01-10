@@ -29,7 +29,7 @@ var scope = require('upcache/scope')({
 	publicKey: <rsa public key>,
 	privateKey: <rsa private key>,
 	algorithm: 'RS256', // optional
-	maxAge: age in seconds or string interpreted by 'zeit/ms' module,
+	maxAge: age in seconds, must be an integer,
 	userProperty: "user" // optional, populates req[userProperty] if set
 });
 
