@@ -54,16 +54,28 @@ function tagFn() {
 			delete req.headers["if-modified-since"];
 		}
 		var inc = incFn(req);
-		var list = res.get(headerTag);
+		var list = res.get(headerTag) || [];
 		if (!Array.isArray(list)) list = [list];
 		tags.forEach(function(tag) {
 			tag = common.replacements(tag, req.params);
-			if (inc) tag = '+' + tag;
-			if (list.indexOf(tag) < 0) {
-				list.push(tag);
-				res.append(headerTag, tag);
+			var incTag = inc;
+			if (tag.startsWith('+')) {
+				incTag = true;
+				itag = tag;
+				tag = tag.slice(1);
+			} else {
+				itag = '+' + tag;
 			}
+			var cur = list.indexOf(tag);
+			if (cur < 0) {
+				cur = list.indexOf(itag);
+			} else if (incTag) {
+				list[cur] = itag;
+				return;
+			}
+			if (cur < 0) list.push(incTag ? itag : tag);
 		});
+		res.set(headerTag, list);
 		debug("response tags", list);
 		if (next) next();
 	}

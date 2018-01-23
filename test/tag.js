@@ -96,6 +96,14 @@ describe("Tag", function suite() {
 			});
 		});
 
+		app.get('/multiplesame', tag('one'), tag('one', 'two'), tag('+one', 'two', 'three'), function(req, res, next) {
+			count(req, 1);
+			res.send({
+				value: (req.path || '/').substring(1),
+				date: new Date()
+			});
+		});
+
 		app.get(untaggedPath, function(req, res, next) {
 			count(req, 1);
 			res.send("ok");
@@ -233,6 +241,20 @@ describe("Tag", function suite() {
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			count(req).should.equal(2);
+		});
+	});
+
+	it("should not return multiple identical tags", function() {
+		var req = {
+			port: ports.ngx,
+			path: '/multiplesame'
+		};
+		return runner.get(req).then(function(res) {
+			res.headers.should.have.property('x-upcache-tag', '+one, two, three');
+			return runner.get(req);
+		}).then(function(res) {
+			res.headers.should.have.property('x-upcache-tag', '+one, two, three');
+			count(req).should.equal(1);
 		});
 	});
 });
