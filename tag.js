@@ -54,12 +54,17 @@ function tagFn() {
 			delete req.headers["if-modified-since"];
 		}
 		var inc = incFn(req);
+		var list = res.get(headerTag);
+		if (!Array.isArray(list)) list = [list];
 		tags.forEach(function(tag) {
 			tag = common.replacements(tag, req.params);
 			if (inc) tag = '+' + tag;
-			res.append(headerTag, tag);
+			if (list.indexOf(tag) < 0) {
+				list.push(tag);
+				res.append(headerTag, tag);
+			}
 		});
-		debug("response tags", res.get(headerTag));
+		debug("response tags", list);
 		if (next) next();
 	}
 
