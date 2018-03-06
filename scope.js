@@ -202,7 +202,10 @@ Scope.prototype.parseBearer = function(req) {
 		debug(ex, bearer);
 	}
 	if (!obj) return;
-	if (prop) req[prop] = obj;
+	if (prop) {
+		debug(`set req.${prop}`, obj);
+		req[prop] = obj;
+	}
 	return obj;
 };
 
