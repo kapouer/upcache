@@ -7,13 +7,13 @@ Scope and Tag cache protocols between proxy and upstream application.
 
 This implementation can build cache keys for
 - resource tagging and REST invalidation
-- resource scoping
+- resource scoping with access to resources defined by permissions in a json web token
 
 by exchanging headers in existing HTTP requests/responses between proxy and application.
 
 
-Docker
-------
+Docker (experimental)
+---------------------
 
 ```
 docker build github.com/kapouer/upcache.git
@@ -76,7 +76,8 @@ app.post('/route', tag(), scope.restrict('logged'), ...);
 See README-tag.md and README-scope.md for documentation and tests for more examples.
 
 Mind that `srcache` module honours cache control headers - if the application
-sends responses with `Cache-Control: max-age=0`, the resource is not cached.
+sends responses with `Cache-Control: max-age=0`, the resource is not cached,
+and `tag().for()` is a facility for doing cache control.
 
 
 Detection by upstream
