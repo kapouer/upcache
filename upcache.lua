@@ -7,7 +7,7 @@ module._VERSION = "0.5"
 
 function module.request()
 	ngx.req.set_header(common.prefixHeader, module._VERSION)
-	local keyReq = ngx.var.host .. ngx.var.request_uri
+	local keyReq = upkey()
 	local nkeyReq = keyReq
 	local method = ngx.req.get_method()
 	if method == "GET" or method == "HEAD" then
@@ -25,7 +25,7 @@ function module.response()
 		return
 	end
 	local method = ngx.req.get_method()
-	local keyRes = ngx.var.host .. ngx.var.request_uri
+	local keyRes = upkey()
 	local nkeyRes = keyRes
 	if method == "GET" or method == "HEAD" then
 		nkeyRes = cacheScope.set(nkeyRes, ngx.var, ngx.header)
@@ -41,6 +41,10 @@ function module.response()
 		ngx.var.storeKey = ngx.var.fetchKey
 	end
 	ngx.log(ngx.INFO, "response key '", nkeyRes, "'")
+end
+
+function upkey()
+	return (ngx.var.https == "on" and "https" or "http") .. "://" .. ngx.var.host .. ngx.var.request_uri
 end
 
 return module
