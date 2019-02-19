@@ -86,7 +86,7 @@ function authorize(action, restrictions, user) {
 	return grants;
 }
 
-function sendHeaders(res, list) {
+Scope.prototype.headers = function(res, list) {
 	// an empty list does not have same meaning as no list at all
 	if (list) {
 		res.set(Scope.headerScope, list);
@@ -103,25 +103,28 @@ Scope.prototype.test = function(req, restrictions) {
 	var user = this.parseBearer(req);
 	var action = getAction(req.method);
 	var list = restrictionsByAction(action, restrictions);
-	var headers = [];
 	if (list) list = list.map(function(item) {
 		return common.replacements(item, req.params);
 	});
-	sendHeaders(req.res, list);
+	this.headers(req.res, list);
 	return authorize(action, list, user);
+};
+
+Scope.prototype.handshake = function(req, res, next) {
+	if (req.get(Scope.headerHandshake) == '1' || !this.publicKeySent) {
+		debug("sending public key to proxy");
+		this.publicKeySent = true;
+		res.set(Scope.headerHandshake, encodeURIComponent(this.config.publicKey));
+	}
+	next();
 };
 
 Scope.prototype.restrict = function() {
 	var args = Array.from(arguments);
-	var config = this.config;
 	var self = this;
 	// TODO memoize restrictionsByAction
 	return function(req, res, next) {
-		if (req.get(Scope.headerHandshake) == '1' || !self.publicKeySent) {
-			debug("sending public key to proxy");
-			self.publicKeySent = true;
-			res.set(Scope.headerHandshake, encodeURIComponent(config.publicKey));
-		}
+		self.handshake(req, res, function() {});
 		var grants = self.test(req, args);
 		var user = self.parseBearer(req);
 		var err;
@@ -186,7 +189,7 @@ Scope.prototype.parseBearer = function(req) {
 	var config = this.config;
 	var prop = config.userProperty;
 	if (prop && req[prop]) return req[prop];
-	if (!req.cookies) req.cookies = cookie.parse(req.headers.cookie || "") || {};
+	if (!req.cookies) req.cookies = cookie.parse(req.headers.cookie || "") || {};
 
 	var bearer = req.cookies.bearer;
 	if (!bearer) {

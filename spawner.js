@@ -2,7 +2,6 @@
 
 var spawn = require('child_process').spawn;
 var http = require('http');
-var fs = require('fs');
 var Path = require('path');
 var URL = require('url');
 var Transform = require('stream').Transform;
@@ -20,7 +19,7 @@ module.exports = function(opts, cb) {
 		obj.memcached = spawn('memcached', ['-vv', '-p', opts.memc, '-I', '10m']);
 		obj.memcached.stdout.pipe(process.stdout);
 		obj.memcached.stderr.pipe(new FilterPipe(function(str) {
-			if (/^\<\d+\s[sg]et\s.*$/mig.test(str)) return "[memc] " + str.substring(4);
+			if (/^<\d+\s[sg]et\s.*$/mig.test(str)) return "[memc] " + str.substring(4);
 		}, opts.grep)).pipe(process.stderr);
 		obj.memcached.on('error', obj.close);
 	}
@@ -40,7 +39,7 @@ module.exports = function(opts, cb) {
 				if (p1 == "[notice]") return "";
 				return p1 + p2;
 			});
-			str = str.replace(/^\[lua\][\d\):]*\s/, "[lua]  ");
+			str = str.replace(/^\[lua\][\d):]*\s/, "[lua]  ");
 			return str;
 		}, opts.grep)).pipe(process.stderr);
 		obj.nginx.on('error', obj.close);

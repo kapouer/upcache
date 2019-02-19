@@ -59,6 +59,7 @@ function tagFn() {
 		tags.forEach(function(tag) {
 			tag = common.replacements(tag, req.params);
 			var incTag = inc;
+			var itag;
 			if (tag.startsWith('+')) {
 				incTag = true;
 				itag = tag;
