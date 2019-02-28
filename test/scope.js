@@ -1,5 +1,3 @@
-var debug = require('debug')('scope');
-var should = require('should');
 var fs = require('fs');
 var Path = require('path');
 var URL = require('url');
@@ -14,7 +12,6 @@ var scope = require('../scope')({
 	issuer: "test",
 	userProperty: 'user'
 });
-var tag = require('../tag');
 
 var ports = {
 	app: 3000,
