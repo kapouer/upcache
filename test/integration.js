@@ -172,7 +172,7 @@ describe("Tag and Scope", function suite() {
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-scope', 'bookReader, bookSecond');
+			res.headers.should.have.property('x-upcache-scope', 'bookReader,bookSecond');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
 			return runner.get(req);
@@ -289,7 +289,7 @@ describe("Tag and Scope", function suite() {
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-scope', 'bookReader, bookSecond');
+			res.headers.should.have.property('x-upcache-scope', 'bookReader,bookSecond');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
 			return runner.get(req);

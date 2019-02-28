@@ -54,8 +54,9 @@ function tagFn() {
 			delete req.headers["if-modified-since"];
 		}
 		var inc = incFn(req);
-		var list = res.get(headerTag) || [];
-		if (!Array.isArray(list)) list = [list];
+		var list = res.get(headerTag);
+		if (list) list = list.split(',');
+		else list = [];
 		tags.forEach(function(tag) {
 			tag = common.replacements(tag, req.params);
 			var incTag = inc;
@@ -76,7 +77,7 @@ function tagFn() {
 			}
 			if (cur < 0) list.push(incTag ? itag : tag);
 		});
-		res.set(headerTag, list);
+		res.set(headerTag, list.join(','));
 		debug("response tags", list);
 		if (next) next();
 	}

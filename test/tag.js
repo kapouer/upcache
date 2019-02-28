@@ -159,7 +159,7 @@ describe("Tag", function suite() {
 		return runner.get(req)
 		.then(function(res) {
 			firstDate = Date.parse(res.body.date);
-			res.headers.should.have.property('x-upcache-tag', 'one, two');
+			res.headers.should.have.property('x-upcache-tag', 'one,two');
 			return runner.post(req, 'postbody');
 		}).then(function(res) {
 			res.headers.should.have.property('x-upcache-tag', '+two');
@@ -250,10 +250,10 @@ describe("Tag", function suite() {
 			path: '/multiplesame'
 		};
 		return runner.get(req).then(function(res) {
-			res.headers.should.have.property('x-upcache-tag', '+one, two, three');
+			res.headers.should.have.property('x-upcache-tag', '+one,two,three');
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-tag', '+one, two, three');
+			res.headers.should.have.property('x-upcache-tag', '+one,two,three');
 			count(req).should.equal(1);
 		});
 	});
