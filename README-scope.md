@@ -33,6 +33,9 @@ var scope = require('upcache/scope')({
 	userProperty: "user" // optional, populates req[userProperty] if set
 });
 
+// ensures key handshape and req[userProperty]
+app.use(scope.init);
+
 app.post("/login", function(req, res, next) {
 	dblogin(req.body.login, req.body.password).then(function(user) {
 		user.scopes = {
@@ -54,6 +57,7 @@ app.get("/logout", function(req, res, next) {
 });
 
 app.get('/api/user', scope.restrict("&user-*", "admin"), myMidleware);
+
 ```
 
 Restrictions
@@ -141,7 +145,8 @@ req, res are the parameters received by express middleware;
 
 user is an object expected to have a `scopes` array of strings.
 
-
+- scope.init(req, res, next)  
+  middleware setting up handshake headers and req[userProperty]
 - scope.sign(req, user, options)  
   sign user with hostname as issuer, returns a jwt
 - scope.login(res, user, options)  

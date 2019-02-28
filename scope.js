@@ -15,6 +15,9 @@ function Scope(obj) {
 	this.config = Object.assign({
 		algorithm: 'RS256'
 	}, obj);
+	this.init = this.init.bind(this);
+	this.handshake = this.handshake.bind(this);
+	this.parse = this.parse.bind(this);
 }
 
 Scope.headerHandshake = common.prefixHeader + '-Key-Handshake';
@@ -125,7 +128,7 @@ Scope.prototype.handshake = function(req, res, next) {
 		this.publicKeySent = true;
 		res.set(Scope.headerHandshake, encodeURIComponent(this.config.publicKey));
 	}
-	next();
+	if (next) next();
 };
 
 Scope.prototype.restrict = function() {
@@ -193,7 +196,16 @@ function getAction(method) {
 		DELETE: "del"
 	}[method];
 }
+Scope.prototype.init = function(req, res, next) {
+	this.handshake(req, res);
+	this.parseBearer(req);
+	next();
+};
 
+Scope.prototype.parse = function(req, res, next) {
+	this.parseBearer(req);
+	next();
+};
 Scope.prototype.parseBearer = function(req) {
 	var config = this.config;
 	var prop = config.userProperty;
