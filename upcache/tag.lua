@@ -25,10 +25,9 @@ function module.get(key)
 end
 
 function module.set(key, headers)
-	local tags = headers[tagHeader];
-	if tags == nil then return nil end
-	if type(tags) ~= "table" then
-		tags = {tags}
+	local tags = common.parseHeader(headers[tagHeader])
+	if tags == nil
+		then return nil
 	end
 	local mtags = ngx.shared.upcacheTags
 	local tagval
@@ -49,4 +48,3 @@ function module.set(key, headers)
 end
 
 return module;
-

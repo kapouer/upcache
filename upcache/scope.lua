@@ -137,10 +137,9 @@ function module.get(key, vars)
 end
 
 function module.set(key, vars, headers)
-	local restrictions = headers[scopeHeader];
-	if restrictions == nil then return key end
-	if type(restrictions) == "string" then
-		restrictions = {restrictions}
+	local restrictions = common.parseHeader(headers[scopeHeader])
+	if restrictions == nil then
+		return key
 	end
 	update_restrictions(key, restrictions)
 

@@ -23,6 +23,22 @@ end
 
 module.prefixHeader = "X-Upcache"
 
+function module.parseHeader(obj)
+	if obj == nil then
+		return nil
+	end
+	if type(obj) == "string" then
+		obj = {obj}
+	end
+	local list = {}
+	for i, label in pairs(obj) do
+		for str in string.gmatch(label, "[^,%s]+") do
+			table.insert(list, str)
+		end
+	end
+	return list
+end
+
 function module.get_variants(key, what)
 	local pac = ngx.shared.upcacheVariants:get(key)
 	if pac == nil then
