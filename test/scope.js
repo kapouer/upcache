@@ -1,3 +1,4 @@
+var should = require('should');
 var fs = require('fs');
 var Path = require('path');
 var URL = require('url');
