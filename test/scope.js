@@ -80,6 +80,21 @@ describe("Scope", function suite() {
 			res.sendStatus(204);
 		});
 
+		app.get(testPathHeadersSetting, scope.init, function(req, res, next) {
+			count(req, 1);
+
+			scope.headers(res, 'dynA');
+			scope.headers(res, ['dynB']);
+			scope.headers(res, ['dynC', 'dynD']);
+			scope.headers(res, ['dynD', 'dynE', 'dynA']);
+			scope.headers(res, 'dynD');
+
+			res.send({
+				value: (req.path || '/').substring(1),
+				date: new Date()
+			});
+		});
+
 		app.get(testPath, scope.restrict('bookReader', 'bookSecond'), function(req, res, next) {
 			count(req, 1);
 			res.send({
@@ -264,6 +279,20 @@ describe("Scope", function suite() {
 		});
 	});
 
+
+	it("should get headers right with proxy", function() {
+		var headers = {};
+		var req = {
+			headers: headers,
+			port: ports.ngx,
+			path: testPathHeadersSetting
+		};
+		return runner.get(req).then(function(res) {
+			res.headers.should.have.property('x-upcache-scope', 'dynA,dynB,dynC,dynD,dynE');
+			res.statusCode.should.equal(200);
+			count(req).should.equal(1);
+		});
+	});
 	it("should log in and not get read access to another url with proxy", function() {
 		var headers = {};
 		var req = {

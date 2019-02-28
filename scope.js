@@ -89,7 +89,16 @@ function authorize(action, restrictions, user) {
 Scope.prototype.headers = function(res, list) {
 	// an empty list does not have same meaning as no list at all
 	if (list) {
-		res.set(Scope.headerScope, list);
+		if (!Array.isArray(list)) list = [list];
+		else list = list.slice();
+		var cur = res.get(Scope.headerScope);
+		if (cur) cur = cur.split(',');
+		else cur = [];
+		list.forEach(function(str) {
+			str = str.trim();
+			if (str && cur.includes(str) == false) cur.push(str);
+		});
+		res.set(Scope.headerScope, cur.join(','));
 		debug("send header", Scope.headerScope, list);
 	} else {
 		debug("not sending header", Scope.headerScope);
