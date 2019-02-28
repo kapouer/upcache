@@ -211,21 +211,19 @@ Scope.prototype.parseBearer = function(req) {
 	var prop = config.userProperty;
 	if (prop && req[prop]) return req[prop];
 	if (!req.cookies) req.cookies = cookie.parse(req.headers.cookie || "") || {};
-
-	var bearer = req.cookies.bearer;
-	if (!bearer) {
-		return;
-	}
 	var obj;
-	try {
-		obj = jwt.verify(bearer, config.publicKey, {
-			algorithm: config.algorithm,
-			issuer: req.hostname
-		});
-	} catch(ex) {
-		debug(ex, bearer);
+	var bearer = req.cookies.bearer;
+	if (bearer) {
+		try {
+			obj = jwt.verify(bearer, config.publicKey, {
+				algorithm: config.algorithm,
+				issuer: req.hostname
+			});
+		} catch(ex) {
+			debug(ex, bearer);
+		}
 	}
-	if (!obj) return;
+	if (!obj) obj = {};
 	if (prop) {
 		debug(`set req.${prop}`, obj);
 		req[prop] = obj;
