@@ -55,7 +55,9 @@ function tagFn() {
 		}
 		var inc = incFn(req);
 		var list = res.get(headerTag);
-		if (list) list = list.split(',');
+		if (list) list = list.split(',').map(function(str) {
+			return str.trim();
+		});
 		else list = [];
 		tags.forEach(function(tag) {
 			tag = common.replacements(tag, req.params);
@@ -77,7 +79,7 @@ function tagFn() {
 			}
 			if (cur < 0) list.push(incTag ? itag : tag);
 		});
-		res.set(headerTag, list.join(','));
+		res.set(headerTag, list.join(', '));
 		debug("response tags", list);
 		if (next) next();
 	}

@@ -288,7 +288,7 @@ describe("Scope", function suite() {
 			path: testPathHeadersSetting
 		};
 		return runner.get(req).then(function(res) {
-			res.headers.should.have.property('x-upcache-scope', 'dynA,dynB,dynC,dynD,dynE');
+			res.headers.should.have.property('x-upcache-scope', 'dynA, dynB, dynC, dynD, dynE');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
 		});
