@@ -91,7 +91,8 @@ function authorize(action, restrictions, user) {
 
 Scope.prototype.headers = function(res, list) {
 	if (list == null) list = [];
-	else if (!Array.isArray(list)) list = [list];
+	else if (typeof list == "string") list = [list];
+	else if (typeof list == "object" && !Array.isArray(list)) list = Object.keys(list);
 	var cur = res.get(Scope.headerScope);
 	if (cur) cur = cur.split(',').map(function(str) {
 		return str.trim();
