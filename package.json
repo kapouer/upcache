@@ -33,7 +33,7 @@
     "debug": "^2.6.9",
     "express-cache-response-directive": "^1.1.0",
     "http-errors": "^1.6.2",
-    "jsonwebtoken": "^8.4.0"
+    "jsonwebtoken": "^8.5.0"
   },
   "devDependencies": {
     "express": "^4.16.2",
