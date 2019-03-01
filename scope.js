@@ -90,24 +90,19 @@ function authorize(action, restrictions, user) {
 }
 
 Scope.prototype.headers = function(res, list) {
-	// an empty list does not have same meaning as no list at all
-	if (list) {
-		if (!Array.isArray(list)) list = [list];
-		else list = list.slice();
-		var cur = res.get(Scope.headerScope);
-		if (cur) cur = cur.split(',').map(function(str) {
-			return str.trim();
-		});
-		else cur = [];
-		list.forEach(function(str) {
-			str = str.trim();
-			if (str && cur.includes(str) == false) cur.push(str);
-		});
-		res.set(Scope.headerScope, cur.join(', '));
-		debug("send header", Scope.headerScope, list);
-	} else {
-		debug("not sending header", Scope.headerScope);
-	}
+	if (list == null) list = [];
+	else if (!Array.isArray(list)) list = [list];
+	var cur = res.get(Scope.headerScope);
+	if (cur) cur = cur.split(',').map(function(str) {
+		return str.trim();
+	});
+	else cur = [];
+	list.forEach(function(str) {
+		str = str.trim();
+		if (str && cur.includes(str) == false) cur.push(str);
+	});
+	res.set(Scope.headerScope, cur.join(', '));
+	debug("send header", Scope.headerScope, list);
 };
 
 Scope.prototype.test = function(req, restrictions) {
@@ -117,10 +112,12 @@ Scope.prototype.test = function(req, restrictions) {
 	var user = this.parseBearer(req);
 	var action = getAction(req.method);
 	var list = restrictionsByAction(action, restrictions);
-	if (list) list = list.map(function(item) {
-		return common.replacements(item, req.params);
-	});
-	this.headers(req.res, list);
+	if (list) {
+		list = list.map(function(item) {
+			return common.replacements(item, req.params);
+		});
+		this.headers(req.res, list);
+	}
 	return authorize(action, list, user);
 };
 
