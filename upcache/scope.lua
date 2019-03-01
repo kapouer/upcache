@@ -22,12 +22,17 @@ local function logKey(from, what, key, data)
 end
 
 local function authorize(restrictions, scopes)
-	if restrictions == nil then return false end
-	if scopes == nil then scopes = {[""]=true} end
-	local failure = false
-	local item, scope, scopeObj, mandatory, found
 	-- array of granted scopes
 	local grants = {}
+	if restrictions == nil then
+		return grants
+	end
+	if scopes == nil then
+		return grants
+	end
+	local failure = false
+	local item, scope, scopeObj, mandatory, found
+
 	for i, label in pairs(restrictions) do
 		mandatory = false
 		found = false
@@ -57,18 +62,16 @@ local function authorize(restrictions, scopes)
 			break
 		end
 	end
-	if failure == true or #grants == 0 then
-		return false
+	if failure == true then
+		return {}
+	elseif #grants > 0 then
+		table.sort(grants)
 	end
-	table.sort(grants)
 	return grants
 end
 
 local function build_key(key, restrictions, scopes)
 	local grants = authorize(restrictions, scopes)
-	if grants == false then
-		return key
-	end
 	local str = table.concat(grants, ',')
 	if str:len() > 0 then key = str .. ' ' .. key end
 	return key
