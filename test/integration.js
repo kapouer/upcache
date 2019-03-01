@@ -28,6 +28,7 @@ describe("Tag and Scope", function suite() {
 	var testPathTag = '/full-scope-tag-test';
 	var testPathNotGranted = '/full-scope-not-granted-test';
 	var scopeDependentTag = '/scope-dependent-tag';
+	var testPathDynamic = '/dynamic';
 	var counters = {};
 
 	function count(uri, inc) {
@@ -53,6 +54,7 @@ describe("Tag and Scope", function suite() {
 
 		app.post('/login', function(req, res, next) {
 			var givemeScope = req.query.scope;
+			if (givemeScope && !Array.isArray(givemeScope)) givemeScope = [givemeScope];
 			var userId = req.query && req.query.id || 44;
 			var scopes = {
 				[`user-${userId}`]: true,
@@ -63,7 +65,12 @@ describe("Tag and Scope", function suite() {
 					read: true
 				}
 			};
-			if (givemeScope) scopes = {[givemeScope]: true};
+			if (givemeScope) {
+				scopes = {};
+				givemeScope.forEach(function(myscope) {
+					scopes[myscope] = true;
+				});
+			}
 			var bearer = scope.login(res, {id: userId, scopes: scopes});
 			res.send({
 				bearer: bearer // convenient but not technically needed
@@ -122,6 +129,20 @@ describe("Tag and Scope", function suite() {
 		});
 		app.post(scopeDependentTag, tag("usertag18"), function(req, res, next) {
 			res.sendStatus(200);
+		});
+
+		app.get(testPathDynamic, scope.init, tag('test'), function(req, res, next) {
+			count(req, 1);
+
+			var scopes = req.user.scopes || {};
+			var locks = ['dynA', 'dynB'];
+			scope.headers(res, locks);
+
+			res.send({
+				value: (req.path || '/').substring(1),
+				date: new Date(),
+				userscopes: Object.keys(scopes)
+			});
 		});
 
 		app.use(runner.errorHandler);
@@ -357,6 +378,62 @@ describe("Tag and Scope", function suite() {
 		});
 	});
 
+	it("should log in and get read access to a url then read that url again without scopes with proxy", function() {
+		var headers = {};
+		var req = {
+			headers: headers,
+			port: ports.ngx,
+			path: testPathDynamic
+		};
+		return runner.get(req).then(function(res) {
+			res.headers.should.have.property('x-upcache-scope', 'dynA, dynB');
 			res.headers.should.not.have.property('x-upcache-key-handshake');
+			res.statusCode.should.equal(200);
+			return runner.post({
+				port: ports.ngx,
+				path: '/login?scope=dynA&scope=dynB'
+			})
+		}).then(function(res) {
+			res.headers.should.have.property('set-cookie');
+			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+			return runner.get(req);
+		}).then(function(res) {
+			res.headers.should.not.have.property('x-upcache-key-handshake');
+			res.headers.should.have.property('x-upcache-scope', 'dynA, dynB');
+			res.statusCode.should.equal(200);
+			count(req).should.equal(2);
+			delete headers.Cookie;
+			return runner.get(req);
+		}).then(function(res) {
+			// res.headers.should.have.property('x-upcache-scope', '');
+			res.statusCode.should.equal(200);
+			// because it should be a cache hit
+			count(req).should.equal(2);
+		}).then(function(res) {
+			return runner.post({
+				port: ports.ngx,
+				path: '/login?scope=dynA&scope=dynC'
+			})
+		}).then(function(res) {
+			res.headers.should.have.property('set-cookie');
+			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+			return runner.get(req);
+		}).then(function(res) {
+			res.headers.should.not.have.property('x-upcache-key-handshake');
+			res.headers.should.have.property('x-upcache-scope', 'dynA, dynB');
+			res.statusCode.should.equal(200);
+			count(req).should.equal(3);
+			delete headers.Cookie;
+			return runner.get(req);
+		}).then(function(res) {
+			res.headers.should.have.property('x-upcache-scope', 'dynA, dynB');
+			res.statusCode.should.equal(200);
+			// because it should be a cache hit
+			count(req).should.equal(3);
+		})
+	});
+
 
 });

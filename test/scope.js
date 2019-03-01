@@ -4,6 +4,7 @@ var Path = require('path');
 var URL = require('url');
 var cookie = require('cookie');
 var express = require('express');
+var assert = require('assert');
 
 var runner = require('../spawner');
 var scope = require('../scope')({
@@ -26,6 +27,7 @@ describe("Scope", function suite() {
 	var testPathNotGranted = '/scope-not-granted-test';
 	var testPathWildcardMultiple = '/wildcardmul';
 	var testPathWildcard = '/wildcard';
+	var testPathHeadersSetting = '/headers';
 	var counters = {};
 
 	function count(uri, inc) {
@@ -81,6 +83,7 @@ describe("Scope", function suite() {
 
 		app.get(testPathHeadersSetting, scope.init, function(req, res, next) {
 			count(req, 1);
+			assert.ok(req.user);
 
 			scope.headers(res, 'dynA');
 			scope.headers(res, ['dynB']);
@@ -279,7 +282,6 @@ describe("Scope", function suite() {
 		});
 	});
 
-
 	it("should get headers right with proxy", function() {
 		var headers = {};
 		var req = {
@@ -293,6 +295,7 @@ describe("Scope", function suite() {
 			count(req).should.equal(1);
 		});
 	});
+
 	it("should log in and not get read access to another url with proxy", function() {
 		var headers = {};
 		var req = {
