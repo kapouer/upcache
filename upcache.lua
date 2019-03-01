@@ -3,7 +3,7 @@ local cacheScope = require "upcache.scope"
 local cacheTag = require "upcache.tag"
 local common = require "upcache.common"
 
-module._VERSION = "0.5"
+module._VERSION = "0.11"
 
 function module.request()
 	ngx.req.set_header(common.prefixHeader, module._VERSION)
