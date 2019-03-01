@@ -138,12 +138,11 @@ end
 
 function module.set(key, vars, headers)
 	local restrictions = common.parseHeader(headers[scopeHeader])
+	local publicKey = responseHandshake(vars.host, headers)
 	if restrictions == nil then
 		return key
 	end
 	update_restrictions(key, restrictions)
-
-	local publicKey = responseHandshake(vars.host, headers)
 	if publicKey == nil then
 		return key
 	end

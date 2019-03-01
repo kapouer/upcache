@@ -357,5 +357,6 @@ describe("Tag and Scope", function suite() {
 		});
 	});
 
+			res.headers.should.not.have.property('x-upcache-key-handshake');
 
 });
