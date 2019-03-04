@@ -1,9 +1,9 @@
 local module = {}
-local cacheScope = require "upcache.scope"
-local cacheTag = require "upcache.tag"
+local Lock = require "upcache.lock"
+local Tag = require "upcache.tag"
 local common = require "upcache.common"
 
-module._VERSION = "0.11"
+module._VERSION = "1"
 
 function module.request()
 	ngx.req.set_header(common.prefixHeader, module._VERSION)
@@ -11,11 +11,11 @@ function module.request()
 	local nkeyReq = keyReq
 	local method = ngx.req.get_method()
 	if method == "GET" or method == "HEAD" then
-		nkeyReq = cacheScope.get(nkeyReq, ngx.var)
+		nkeyReq = Lock.get(nkeyReq, ngx.var)
 	else
-		cacheScope.requestHandshake(ngx.var.host)
+		Lock.requestHandshake(ngx.var.host)
 	end
-	nkeyReq = cacheTag.get(nkeyReq)
+	nkeyReq = Tag.get(nkeyReq)
 	ngx.var.fetchKey = ngx.md5(nkeyReq)
 	ngx.log(ngx.INFO, "request key '", nkeyReq, "'")
 end
@@ -28,11 +28,11 @@ function module.response()
 	local keyRes = upkey()
 	local nkeyRes = keyRes
 	if method == "GET" or method == "HEAD" then
-		nkeyRes = cacheScope.set(nkeyRes, ngx.var, ngx.header)
+		nkeyRes = Lock.set(nkeyRes, ngx.var, ngx.header)
 	else
-		cacheScope.responseHandshake(ngx.var.host, ngx.header)
+		Lock.responseHandshake(ngx.var.host, ngx.header)
 	end
-	nkeyRes = cacheTag.set(nkeyRes, ngx.header)
+	nkeyRes = Tag.set(nkeyRes, ngx.header)
 	if nkeyRes == nil then
 		ngx.var.storeSkip = 1
 	elseif nkeyRes ~= keyRes then

@@ -1,6 +1,6 @@
 {
   "name": "upcache",
-  "version": "0.11.0",
+  "version": "1.0.0",
   "description": "nginx proxy cache key protocols implementations",
   "scripts": {
     "test": "mocha",
@@ -20,8 +20,9 @@
     "upstream"
   ],
   "bin": {
-    "upcache-spawn": "./bin/upcache-spawn.js"
+    "upcache": "./bin/upcache.js"
   },
+  "main": "./lib/index.js",
   "author": "Jérémy Lal <kapouer@melix.org>",
   "license": "MIT",
   "bugs": {
@@ -32,7 +33,6 @@
     "dashdash": "^1.14.0",
     "debug": "^2.6.9",
     "express-cache-response-directive": "^1.1.0",
-    "http-errors": "^1.6.2",
     "jsonwebtoken": "^8.5.0"
   },
   "devDependencies": {

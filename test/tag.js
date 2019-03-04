@@ -4,8 +4,8 @@ var fs = require('fs');
 var URL = require('url');
 var express = require('express');
 
-var runner = require('../spawner');
-var tag = require('../tag');
+var runner = require('../lib/spawner');
+var tag = require('..').tag;
 
 var ports = {
 	app: 3000,

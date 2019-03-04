@@ -6,15 +6,16 @@ var URL = require('url');
 var cookie = require('cookie');
 var express = require('express');
 
-var runner = require('../spawner');
-var scope = require('../scope')({
+var runner = require('../lib/spawner');
+var upcache = require('..');
+var locker = upcache.lock({
 	privateKey: fs.readFileSync(Path.join(__dirname, 'fixtures/private.pem')).toString(),
 	publicKey: fs.readFileSync(Path.join(__dirname, 'fixtures/public.pem')).toString(),
 	maxAge: 3600,
 	issuer: "test",
 	userProperty: "user"
 });
-var tag = require('../tag');
+var tag = upcache.tag;
 
 var ports = {
 	app: 3000,
@@ -22,7 +23,7 @@ var ports = {
 	memc: 3002
 };
 
-describe("Tag and Scope", function suite() {
+describe("Tag and Lock", function suite() {
 	var servers, app;
 	var testPath = '/full-scope-test';
 	var testPathTag = '/full-scope-tag-test';
@@ -55,30 +56,17 @@ describe("Tag and Scope", function suite() {
 		app.post('/login', function(req, res, next) {
 			var givemeScope = req.query.scope;
 			if (givemeScope && !Array.isArray(givemeScope)) givemeScope = [givemeScope];
-			var userId = req.query && req.query.id || 44;
-			var scopes = {
-				[`user-${userId}`]: true,
-				bookWriter: {
-					write: true
-				},
-				bookReader: {
-					read: true
-				}
-			};
-			if (givemeScope) {
-				scopes = {};
-				givemeScope.forEach(function(myscope) {
-					scopes[myscope] = true;
-				});
-			}
-			var bearer = scope.login(res, {id: userId, scopes: scopes});
+			var bearer = locker.login(res, {
+				id: req.query && req.query.id || 44,
+				grants: givemeScope || ['bookWriter', 'bookReader']
+			});
 			res.send({
 				bearer: bearer // convenient but not technically needed
 			});
 		});
 
 		app.post('/logout', function(req, res, next) {
-			scope.logout(res);
+			locker.logout(res);
 			res.sendStatus(204);
 		});
 
@@ -86,7 +74,7 @@ describe("Tag and Scope", function suite() {
 			res.send(req.get('x-upcache') ? "ok" : "not ok");
 		});
 
-		app.get(testPath, tag('test'), scope.restrict('bookReader', 'bookSecond'), function(req, res, next) {
+		app.get(testPath, tag('test'), locker.restrict('bookReader', 'bookSecond'), function(req, res, next) {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -98,7 +86,7 @@ describe("Tag and Scope", function suite() {
 			res.sendStatus(204);
 		});
 
-		app.get(testPathTag, tag("full"), scope.restrict('bookReader', 'bookSecond'), function(req, res, next) {
+		app.get(testPathTag, tag("full"), locker.restrict('bookReader', 'bookSecond'), function(req, res, next) {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -110,7 +98,7 @@ describe("Tag and Scope", function suite() {
 			res.sendStatus(204);
 		});
 
-		app.get(testPathNotGranted, tag("apart"), scope.restrict('bookReaderWhat'), function(req, res, next) {
+		app.get(testPathNotGranted, tag("apart"), locker.restrict('bookReaderWhat'), function(req, res, next) {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -118,7 +106,7 @@ describe("Tag and Scope", function suite() {
 			});
 		});
 
-		app.get(scopeDependentTag, scope.restrict('user-*'), function userTag(req, res, next) {
+		app.get(scopeDependentTag, locker.restrict('user-:id'), function userTag(req, res, next) {
 			tag('usertag' + req.user.id)(req, res, next);
 		}, function(req, res, next) {
 			count(req, 1);
@@ -131,17 +119,17 @@ describe("Tag and Scope", function suite() {
 			res.sendStatus(200);
 		});
 
-		app.get(testPathDynamic, scope.init, tag('test'), function(req, res, next) {
+		app.get(testPathDynamic, locker.init, tag('test'), function(req, res, next) {
 			count(req, 1);
 
-			var scopes = req.user.scopes || {};
+			var grants = req.user.grants || [];
 			var locks = ['dynA', 'dynB'];
-			scope.headers(res, locks);
+			locker.headers(res, locks);
 
 			res.send({
 				value: (req.path || '/').substring(1),
 				date: new Date(),
-				userscopes: Object.keys(scopes)
+				usergrants: grants
 			});
 		});
 
@@ -184,16 +172,22 @@ describe("Tag and Scope", function suite() {
 			port: ports.ngx,
 			path: testPath
 		};
-		return runner.post({
-			port: ports.ngx,
-			path: '/login'
+		return runner.get(req).then(function(res) {
+			res.headers.should.have.property('x-upcache-lock', 'bookReader, bookSecond');
+			res.statusCode.should.equal(401);
+			count(req).should.equal(0);
+		}).then(function() {
+			return runner.post({
+				port: ports.ngx,
+				path: '/login'
+			});
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-scope', 'bookReader, bookSecond');
+			res.headers.should.have.property('x-upcache-lock', 'bookReader, bookSecond');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
 			return runner.get(req);
@@ -310,7 +304,7 @@ describe("Tag and Scope", function suite() {
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-scope', 'bookReader, bookSecond');
+			res.headers.should.have.property('x-upcache-lock', 'bookReader, bookSecond');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
 			return runner.get(req);
@@ -386,7 +380,7 @@ describe("Tag and Scope", function suite() {
 			path: testPathDynamic
 		};
 		return runner.get(req).then(function(res) {
-			res.headers.should.have.property('x-upcache-scope', 'dynA, dynB');
+			res.headers.should.have.property('x-upcache-lock', 'dynA, dynB');
 			res.headers.should.not.have.property('x-upcache-key-handshake');
 			res.statusCode.should.equal(200);
 			return runner.post({
@@ -400,13 +394,13 @@ describe("Tag and Scope", function suite() {
 			return runner.get(req);
 		}).then(function(res) {
 			res.headers.should.not.have.property('x-upcache-key-handshake');
-			res.headers.should.have.property('x-upcache-scope', 'dynA, dynB');
+			res.headers.should.have.property('x-upcache-lock', 'dynA, dynB');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(2);
 			delete headers.Cookie;
 			return runner.get(req);
 		}).then(function(res) {
-			// res.headers.should.have.property('x-upcache-scope', '');
+			// res.headers.should.have.property('x-upcache-lock', '');
 			res.statusCode.should.equal(200);
 			// because it should be a cache hit
 			count(req).should.equal(2);
@@ -422,13 +416,13 @@ describe("Tag and Scope", function suite() {
 			return runner.get(req);
 		}).then(function(res) {
 			res.headers.should.not.have.property('x-upcache-key-handshake');
-			res.headers.should.have.property('x-upcache-scope', 'dynA, dynB');
+			res.headers.should.have.property('x-upcache-lock', 'dynA, dynB');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(3);
 			delete headers.Cookie;
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-scope', 'dynA, dynB');
+			res.headers.should.have.property('x-upcache-lock', 'dynA, dynB');
 			res.statusCode.should.equal(200);
 			// because it should be a cache hit
 			count(req).should.equal(3);

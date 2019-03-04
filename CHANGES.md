@@ -30,3 +30,8 @@
 - nothing is cached unless tagged
 - no particular peremption is set (used to be 1 day by default if nothing was set)
 
+1.0.0
+=====
+
+- major breaking changes: scopes are now locks and has been simplified a lot.
+

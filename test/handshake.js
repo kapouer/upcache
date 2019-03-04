@@ -6,8 +6,8 @@ var URL = require('url');
 var cookie = require('cookie');
 var express = require('express');
 
-var runner = require('../spawner');
-var scope = require('../scope')({
+var runner = require('../lib/spawner');
+var locker = require('..').lock({
 	privateKey: fs.readFileSync(Path.join(__dirname, 'fixtures/private.pem')).toString(),
 	publicKey: fs.readFileSync(Path.join(__dirname, 'fixtures/public.pem')).toString(),
 	maxAge: 3600,
@@ -20,7 +20,7 @@ var ports = {
 	memc: 3002
 };
 
-describe("Scope", function suite() {
+describe("Lock", function suite() {
 	var servers, app;
 	var testPathWildcard = '/wildcard';
 	var testPathWildcardMultiple = '/partialmatches';
@@ -51,11 +51,10 @@ describe("Scope", function suite() {
 		app.post('/login', function(req, res, next) {
 			var requestedScopes = req.query.scope || [];
 			if (!Array.isArray(requestedScopes)) requestedScopes = [requestedScopes];
-			var scopes = {};
-			requestedScopes.forEach(function(myscope) {
-				scopes[myscope] = true;
+			var bearer = locker.login(res, {
+				id: 44,
+				grants: requestedScopes
 			});
-			var bearer = scope.login(res, {id: 44, scopes: scopes});
 			if (req.query.redirect !== undefined) {
 				res.redirect(req.query.redirect);
 			} else res.send({
@@ -63,18 +62,18 @@ describe("Scope", function suite() {
 			});
 		});
 
-		app.get(testPathWildcardMultiple, scope.restrict('book*'), function(req, res, next) {
+		app.get(testPathWildcardMultiple, locker.restrict('book*'), function(req, res, next) {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
 				date: new Date()
 			});
 		});
-		app.post(testPathWildcardMultiple, scope.restrict('auth'), function(req, res, next) {
+		app.post(testPathWildcardMultiple, locker.restrict('auth'), function(req, res, next) {
 			res.sendStatus(204);
 		});
 
-		app.get(testPathWildcard, scope.restrict('*'), function(req, res, next) {
+		app.get(testPathWildcard, locker.vary('*'), function(req, res, next) {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -109,7 +108,7 @@ describe("Scope", function suite() {
 			port: ports.ngx,
 			path: testPathWildcardMultiple,
 			headers: {
-				Cookie: cookie.serialize("bearer", scope.login(fakeRes, {scopes: {
+				Cookie: cookie.serialize("bearer", locker.login(fakeRes, {scopes: {
 					auth: true
 				}}))
 			}

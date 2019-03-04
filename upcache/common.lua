@@ -17,11 +17,15 @@ function module.console.error(...)
 	return log(ERR, ...)
 end
 
-function module.console.encode(...)
-	return json.encode(...)
+function module.console.encode(obj)
+	if obj == nil then
+		return "null"
+	end
+	return json.encode(obj)
 end
 
 module.prefixHeader = "X-Upcache"
+module.variants = "upcacheVariants"
 
 function module.parseHeader(obj)
 	if obj == nil then
@@ -31,7 +35,7 @@ function module.parseHeader(obj)
 		obj = {obj}
 	end
 	local list = {}
-	for i, label in pairs(obj) do
+	for i, label in ipairs(obj) do
 		for str in string.gmatch(label, "[^,%s]+") do
 			table.insert(list, str)
 		end
@@ -39,10 +43,14 @@ function module.parseHeader(obj)
 	return list
 end
 
-function module.get_variants(key, what)
-	local pac = ngx.shared.upcacheVariants:get(key)
+function module.get(dict, key, what)
+	local pac = ngx.shared[dict]:get(key)
 	if pac == nil then
-		return nil
+		if what == nil then
+			return {}
+		else
+			return nil
+		end
 	end
 	local unpac = mp.unpack(pac)
 	if what ~= nil then
@@ -51,13 +59,18 @@ function module.get_variants(key, what)
 	return unpac
 end
 
-function module.set_variants(key, what, data)
-	local vars = module.get_variants(key)
-	if vars == nil then
-		vars = {}
+function module.set(dict, key, data, what)
+	local vars
+	if what ~= nil then
+		vars = module.get(dict, key)
+		if vars == nil then
+			vars = {}
+		end
+		vars[what] = data
+	else
+		vars = data
 	end
-	vars[what] = data
-	ngx.shared.upcacheVariants:set(key, mp.pack(vars))
+	ngx.shared[dict]:set(key, mp.pack(vars))
 	return vars
 end
 

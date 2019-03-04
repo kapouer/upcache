@@ -2,7 +2,7 @@
 
 var dash = require('dashdash');
 
-var spawner = require('../spawner');
+var spawner = require('../lib/spawner');
 
 var parser = dash.createParser({options: [
 	{

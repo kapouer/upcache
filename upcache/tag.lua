@@ -12,7 +12,7 @@ local function build_key(key, tags)
 	local nkey = key
 	local mtags = ngx.shared.upcacheTags
 	local tagval
-	for i, tag in pairs(tags) do
+	for i, tag in ipairs(tags) do
 		tagval = mtags:get(tag)
 		if tagval == nil then tagval = MVP end
 		nkey = tag .. '=' .. tagval .. ' ' .. nkey
@@ -21,7 +21,7 @@ local function build_key(key, tags)
 end
 
 function module.get(key)
-	return build_key(key, common.get_variants(key, 'tags'))
+	return build_key(key, common.get(common.variants, key, 'tags'))
 end
 
 function module.set(key, headers)
@@ -31,7 +31,7 @@ function module.set(key, headers)
 	end
 	local mtags = ngx.shared.upcacheTags
 	local tagval
-	for i, tag in pairs(tags) do
+	for i, tag in ipairs(tags) do
 		if (tag:sub(1,1) == '+') then
 			tag = tag:sub(2)
 			tags[i] = tag
@@ -43,7 +43,7 @@ function module.set(key, headers)
 		end
 	end
 	table.sort(tags)
-	common.set_variants(key, 'tags', tags)
+	common.set(common.variants, key, tags, 'tags')
 	return build_key(key, tags)
 end
 

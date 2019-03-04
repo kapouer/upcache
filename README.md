@@ -1,29 +1,14 @@
-[![NPM](https://nodei.co/npm/upcache.png?downloads=true&stars=true)](https://nodei.co/npm/upcache/)
-
 upcache
 =======
 
-Scope and Tag cache protocols between proxy and upstream application.
+Caching proxy having cache keys configured by the upstream application,
+by setting http response headers.
 
-This implementation can build cache keys for
-- resource tagging and REST invalidation
-- resource scoping with access to resources defined by permissions in a json web token
+Upcache has several ways of changing the cache keys:
 
-by exchanging headers in existing HTTP requests/responses between proxy and application.
-
-
-Docker (experimental)
----------------------
-
-```
-docker build github.com/kapouer/upcache.git
-docker run -p 3001:3001 --net="host" -t kapouer/upcache
-```
-
-These docker commands will be useful: `docker ps`, `docker images`, `docker stop`, and
-```
-docker run --rm -it kapouer/upcache bash -il
-```
+- [tags](./README-tag.md), version resources by zones
+- [locks](./README-lock.md), vary on client json web token grants
+- [maps](./README-map.md), vary by mapping http request headers
 
 
 Requirements
@@ -65,15 +50,16 @@ Once installed, load appropriate helpers with
 
 ```
 var app = express();
-var tag = require('upcache/tag');
-var scope = require('upcache/scope');
+var tag = require('upcache').tag;
+var locker = require('upcache').lock(config);
 
-app.get('/route', tag('ugc', 'global'), scope.restrict('logged'), ...);
-app.post('/route', tag(), scope.restrict('logged'), ...);
+app.get('/route', tag('ugc', 'global'), locker.restrict('logged'), ...);
+app.post('/route', tag(), locker.restrict('logged'), ...);
 
 ```
 
-See README-tag.md and README-scope.md for documentation and tests for more examples.
+See README-tag.md and README-lock.md for documentation,
+and test/ for more examples.
 
 Mind that `srcache` module honours cache control headers - if the application
 sends responses with `Cache-Control: max-age=0`, the resource is not cached,
@@ -94,7 +80,7 @@ A pre-configured nginx environment is available for testing a Node.js applicatio
 that listens on port 3000, with nginx on port 3001 and memcached on port 3002,
 simply by launching (depending on ./node_modules/.bin being on PATH or not)
 ```
-upcache-spawn
+npm run upcache
 ```
 which also has an option for filtering output `-g <regexp pattern>`.
 
@@ -105,4 +91,5 @@ License
 -------
 
 See LICENSE file.
+
 

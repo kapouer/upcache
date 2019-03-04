@@ -6,8 +6,8 @@ var cookie = require('cookie');
 var express = require('express');
 var assert = require('assert');
 
-var runner = require('../spawner');
-var scope = require('../scope')({
+var runner = require('../lib/spawner');
+var scope = require('..').lock({
 	privateKey: fs.readFileSync(Path.join(__dirname, 'fixtures/private.pem')).toString(),
 	publicKey: fs.readFileSync(Path.join(__dirname, 'fixtures/public.pem')).toString(),
 	maxAge: 3600,
@@ -21,13 +21,14 @@ var ports = {
 	memc: 3002
 };
 
-describe("Scope", function suite() {
+describe("Lock", function suite() {
 	var servers, app;
 	var testPath = '/scope-test';
 	var testPathNotGranted = '/scope-not-granted-test';
 	var testPathWildcardMultiple = '/wildcardmul';
 	var testPathWildcard = '/wildcard';
 	var testPathHeadersSetting = '/headers';
+	var testPathHeadersWithReplacement = '/replacement';
 	var counters = {};
 
 	function count(uri, inc) {
@@ -54,21 +55,10 @@ describe("Scope", function suite() {
 		app.post('/login', function(req, res, next) {
 			var givemeScope = req.query.scope;
 			if (givemeScope && !Array.isArray(givemeScope)) givemeScope = [givemeScope];
-			var scopes = {
-				bookWriter: {
-					write: true
-				},
-				bookReader: {
-					read: true
-				}
-			};
-			if (givemeScope) {
-				scopes = {};
-				givemeScope.forEach(function(myscope) {
-					scopes[myscope] = true;
-				});
-			}
-			var bearer = scope.login(res, {id: 44, scopes: scopes});
+			var bearer = scope.login(res, {
+				id: req.query.id || 44,
+				grants: givemeScope || ['bookWriter', 'bookReader']
+			});
 			if (req.query.redirect !== undefined) {
 				res.redirect(req.query.redirect);
 			} else res.send({
@@ -97,6 +87,15 @@ describe("Scope", function suite() {
 			});
 		});
 
+		app.get(testPathHeadersWithReplacement, scope.vary('id-:id'), function(req, res, next) {
+			count(req, 1);
+			assert.ok(req.user);
+			res.send({
+				value: (req.path || '/').substring(1),
+				date: new Date()
+			});
+		});
+
 		app.get(testPath, scope.restrict('bookReader', 'bookSecond'), function(req, res, next) {
 			req.should.have.property('user');
 			count(req, 1);
@@ -114,7 +113,7 @@ describe("Scope", function suite() {
 			});
 		});
 
-		app.get(testPathWildcardMultiple, scope.restrict('book*'), function(req, res, next) {
+		app.get(testPathWildcardMultiple, scope.vary('book*'), function(req, res, next) {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -125,7 +124,7 @@ describe("Scope", function suite() {
 			res.sendStatus(204);
 		});
 
-		app.get(testPathWildcard, scope.restrict('*'), function(req, res, next) {
+		app.get(testPathWildcard, scope.vary('*'), function(req, res, next) {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -133,14 +132,9 @@ describe("Scope", function suite() {
 			});
 		});
 
-		app.get("/user/:id", function(req, res, next) {
-			if (scope.test(req, "user-" + req.params.id)) res.send({id: parseInt(req.params.id)});
+		app.get("/user/:id", scope.vary('user-:id'), function(req, res, next) {
+			if (req.user.id == req.params.id) res.send({id: parseInt(req.params.id)});
 			else res.sendStatus(403);
-		});
-
-		app.get("/userstar/:id", scope.restrict('user-:id'), function(req, res, next) {
-			count(req, 1);
-			res.send({id: parseInt(req.params.id)});
 		});
 
 		app.use(runner.errorHandler);
@@ -182,7 +176,7 @@ describe("Scope", function suite() {
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-scope', 'bookReader, bookSecond');
+			res.headers.should.have.property('x-upcache-lock', 'bookReader, bookSecond');
 			count(req).should.equal(1);
 		});
 	});
@@ -270,8 +264,8 @@ describe("Scope", function suite() {
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.not.have.property('x-upcache-key-handshake');
-			res.headers.should.have.property('x-upcache-scope', 'bookReader, bookSecond');
+			res.headers.should.not.have.property('x-upcache-lock-key');
+			res.headers.should.have.property('x-upcache-lock', 'bookReader, bookSecond');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
 			return runner.get(req);
@@ -290,7 +284,7 @@ describe("Scope", function suite() {
 			path: testPathHeadersSetting
 		};
 		return runner.get(req).then(function(res) {
-			res.headers.should.have.property('x-upcache-scope', 'dynA, dynB, dynC, dynD, dynE');
+			res.headers.should.have.property('x-upcache-lock', 'dynA, dynB, dynC, dynD, dynE');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
 		});
@@ -456,14 +450,14 @@ describe("Scope", function suite() {
 		var firstDate;
 		return runner.post({
 			port: ports.app,
-			path: '/login?scope=user-45'
+			path: '/login?id=45'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-scope', 'user-45');
+			res.headers.should.have.property('x-upcache-lock', 'user-:id');
 			res.statusCode.should.equal(200);
 			res.body.id.should.equal(45);
 			req.path += '1';
@@ -480,17 +474,16 @@ describe("Scope", function suite() {
 			port: ports.ngx,
 			path: '/user/45'
 		};
-		var firstDate;
 		return runner.post({
 			port: ports.ngx,
-			path: '/login?scope=user-45'
+			path: '/login?id=45'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-scope', 'user-45');
+			res.headers.should.have.property('x-upcache-lock', 'user-:id');
 			res.statusCode.should.equal(200);
 			res.body.id.should.equal(45);
 			req.path += '1';
@@ -499,70 +492,5 @@ describe("Scope", function suite() {
 			res.statusCode.should.equal(403);
 		});
 	});
-
-	it("should log in as user and be authorized to read user, then be unauthorized to read another user using replacements (without proxy)", function() {
-		var headers = {};
-		var req = {
-			headers: headers,
-			port: ports.app,
-			path: '/userstar/46'
-		};
-		var firstDate;
-		return runner.post({
-			port: ports.app,
-			path: '/login?scope=user-46'
-		}).then(function(res) {
-			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get(req);
-		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-scope', 'user-46');
-			res.statusCode.should.equal(200);
-			res.body.id.should.equal(46);
-			return runner.get(req);
-		}).then(function(res) {
-			count(req).should.equal(2);
-			res.statusCode.should.equal(200);
-			res.body.id.should.equal(46);
-			req.path += '1';
-			return runner.get(req);
-		}).then(function(res) {
-			res.statusCode.should.equal(403);
-		});
-	});
-
-	it("should log in as user and be authorized to read user, then be unauthorized to read another user using replacements (with proxy)", function() {
-		var headers = {};
-		var req = {
-			headers: headers,
-			port: ports.ngx,
-			path: '/userstar/46'
-		};
-		var firstDate;
-		return runner.post({
-			port: ports.ngx,
-			path: '/login?scope=user-46'
-		}).then(function(res) {
-			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get(req);
-		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-scope', 'user-46');
-			res.statusCode.should.equal(200);
-			res.body.id.should.equal(46);
-			return runner.get(req);
-		}).then(function(res) {
-			res.statusCode.should.equal(200);
-			res.body.id.should.equal(46);
-			count(req).should.equal(2);
-			req.path += '1';
-			return runner.get(req);
-		}).then(function(res) {
-			res.statusCode.should.equal(403);
-		});
-	});
-
 
 });

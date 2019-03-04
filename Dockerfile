@@ -56,5 +56,5 @@ EXPOSE 3001
 RUN chown -R user:user /home/user/nginx && chown -R user:user /var/lib/nginx
 
 USER user
-CMD ./bin/upcache-spawn.js
+CMD ./bin/upcache.js
 
