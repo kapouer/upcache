@@ -23,10 +23,11 @@ Usage
 -----
 
 ```
-const mapper = require('upcache').map;
+const map = require('upcache').map;
+const tag = require('upcache').tag;
 const polyfills = require('polyfill-library');
 
-app.get('/polyfill.js', function(req, res, next) {
+app.get('/polyfill.js', tag('app'), function(req, res, next) {
   const opts = {
     uaString: req.get('user-agent'),
     minify: true,

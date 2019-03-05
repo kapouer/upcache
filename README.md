@@ -51,10 +51,10 @@ Once installed, load appropriate helpers with
 ```
 var app = express();
 var tag = require('upcache').tag;
-var locker = require('upcache').lock(config);
+var lock = require('upcache').lock(config);
 
-app.get('/route', tag('ugc', 'global'), locker.restrict('logged'), ...);
-app.post('/route', tag(), locker.restrict('logged'), ...);
+app.get('/route', tag('ugc', 'global'), lock.restrict('logged'), ...);
+app.post('/route', tag(), lock.restrict('logged'), ...);
 
 ```
 
@@ -64,6 +64,8 @@ and test/ for more examples.
 Mind that `srcache` module honours cache control headers - if the application
 sends responses with `Cache-Control: max-age=0`, the resource is not cached,
 and `tag().for()` is a facility for doing cache control.
+
+To cache something, resources must be tagged, so lock/map won't work without tag.
 
 
 Detection by upstream
