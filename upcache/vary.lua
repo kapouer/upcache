@@ -3,7 +3,7 @@ local console = common.console
 
 local module = {}
 
-local mapHeader = common.prefixHeader .. "-Map"
+local varyHeader = common.prefixHeader .. "-Vary"
 
 local function build_key(key, headers, maps)
 	local val, hash
@@ -20,7 +20,7 @@ local function build_key(key, headers, maps)
 end
 
 function module.get(key, ngx)
-	local maps = common.get(common.variants, key, 'map')
+	local maps = common.get(common.variants, key, 'vary')
 	if maps == nil then
 		return key
 	end
@@ -28,7 +28,7 @@ function module.get(key, ngx)
 end
 
 function module.set(key, ngx)
-	local header = ngx.header[mapHeader]
+	local header = ngx.header[varyHeader]
 	if header == nil
 		then return key
 	end
@@ -37,7 +37,7 @@ function module.set(key, ngx)
 	if val == nil then
 		return key
 	end
-	local maps = common.get(common.variants, key, 'map')
+	local maps = common.get(common.variants, key, 'vary')
 	if maps == nil then
 		maps = {}
 	end
@@ -47,7 +47,7 @@ function module.set(key, ngx)
 		maps[name] = map
 	end
 	map[val] = hash
-	common.set(common.variants, key, maps, 'map')
+	common.set(common.variants, key, maps, 'vary')
 	return build_key(key, ngx.req.get_headers(), maps)
 end
 

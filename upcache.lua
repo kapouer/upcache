@@ -1,7 +1,7 @@
 local module = {}
 local Lock = require "upcache.lock"
 local Tag = require "upcache.tag"
-local Map = require "upcache.map"
+local Vary = require "upcache.vary"
 local common = require "upcache.common"
 
 module._VERSION = "1"
@@ -16,7 +16,7 @@ function module.request()
 	else
 		Lock.requestHandshake(ngx.var.host)
 	end
-	nkeyReq = Map.get(nkeyReq, ngx)
+	nkeyReq = Vary.get(nkeyReq, ngx)
 	nkeyReq = Tag.get(nkeyReq)
 	ngx.var.fetchKey = ngx.md5(nkeyReq)
 	ngx.log(ngx.INFO, "request key '", nkeyReq, "'")
@@ -34,7 +34,7 @@ function module.response()
 	else
 		Lock.responseHandshake(ngx.var.host, ngx.header)
 	end
-	nkeyRes = Map.set(nkeyRes, ngx)
+	nkeyRes = Vary.set(nkeyRes, ngx)
 	nkeyRes = Tag.set(nkeyRes, ngx.header)
 	if nkeyRes == nil then
 		ngx.var.storeSkip = 1

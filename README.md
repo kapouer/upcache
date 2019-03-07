@@ -6,9 +6,9 @@ by setting http response headers.
 
 Upcache has several ways of changing the cache keys:
 
-- [tags](./README-tag.md), version resources by zones
-- [locks](./README-lock.md), vary on client json web token grants
-- [maps](./README-map.md), vary by mapping http request headers
+- [tag](./README-tag.md), version resources by zones
+- [lock](./README-lock.md), vary on client json web token grants
+- [vary](./README-vary.md), vary by grouping selected request headers
 
 
 Requirements
@@ -65,7 +65,7 @@ Mind that `srcache` module honours cache control headers - if the application
 sends responses with `Cache-Control: max-age=0`, the resource is not cached,
 and `tag().for()` is a facility for doing cache control.
 
-To cache something, resources must be tagged, so lock/map won't work without tag.
+To cache something, resources must be tagged, so lock/vary won't work without tag.
 
 
 Detection by upstream

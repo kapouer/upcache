@@ -1,7 +1,7 @@
-Upcache Map
-===========
+Upcache Vary
+============
 
-Maps specific request headers values to application-defined values.
+Varies specific request headers values to application-defined values.
 
 Introduction
 ------------
@@ -12,7 +12,7 @@ by varying on a specific request header.
 Also the response may be the same for many different request headers upon
 which the content vary.
 
-The logic is often only known by the application, thus Upcache Map helps by
+The logic is often only known by the application, thus Upcache Vary helps by
 letting the proxy build cache keys based on mappings obtained through the
 application response http headers.
 
@@ -23,7 +23,7 @@ Usage
 -----
 
 ```
-const map = require('upcache').map;
+const vary = require('upcache').vary;
 const tag = require('upcache').tag;
 const polyfills = require('polyfill-library');
 
@@ -38,7 +38,7 @@ app.get('/polyfill.js', tag('app'), function(req, res, next) {
   // let's assume polyfills already caches bundles by targetedFeatures
   polyfills.getPolyfills(opts).then(function({targetedFeatures, bundle}) {
     var hashKey = objectHash(targetedFeatures);
-    map(res, 'User-Agent', hashKey);
+    vary(res, 'User-Agent', hashKey);
     res.send(bundle);
   });
 });
@@ -47,7 +47,7 @@ app.get('/polyfill.js', tag('app'), function(req, res, next) {
 http response headers
 ---------------------
 
-* X-Upcache-Map  
+* X-Upcache-Vary  
   header-name=value
 
 This header is enough to configure the proxy so it maps the request header

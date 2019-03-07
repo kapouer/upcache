@@ -1,11 +1,11 @@
-var debug = require('debug')('map');
+var debug = require('debug')('vary');
 var should = require('should');
 var fs = require('fs');
 var URL = require('url');
 var express = require('express');
 
 var runner = require('../lib/spawner');
-var map = require('..').map;
+var vary = require('..').vary;
 var tag = require('..').tag;
 
 var ports = {
@@ -14,9 +14,9 @@ var ports = {
 	memc: 3002
 };
 
-describe("Map", function suite() {
+describe("Vary", function suite() {
 	var servers, app;
-	var testPath = '/map-test';
+	var testPath = '/vary-test';
 	var counters = {};
 
 	function count(uri, inc) {
@@ -41,7 +41,7 @@ describe("Map", function suite() {
 		app.server = app.listen(ports.app);
 
 		app.get(testPath, tag('app'), function(req, res, next) {
-			map(res, 'User-Agent', req.get('user-agent').includes('Firefox') ? 1 : 2);
+			vary(res, 'User-Agent', req.get('user-agent').includes('Firefox') ? 1 : 2);
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -59,7 +59,7 @@ describe("Map", function suite() {
 		counters = {};
 	});
 
-	it("should map firefox separately", function() {
+	it("should vary upon two groups of user-agent", function() {
 		var agent1 = 'Mozilla/5.0 (Android 4.4; Mobile; rv:41.0) Gecko/41.0 Firefox/41.0';
 		var agent2 = 'Mozilla/5.0 (Android 4.4; Mobile; rv:41.0) Gecko/41.0 Firefox/42.0';
 		var agent3 = 'Mozilla/5.0';
@@ -76,21 +76,21 @@ describe("Map", function suite() {
 			return runner.get(req);
 		}).then(function(res) {
 			count(req).should.equal(2);
-			res.headers.should.have.property('x-upcache-map', 'User-Agent=1');
+			res.headers.should.have.property('x-upcache-vary', 'User-Agent=1');
 			headers['User-Agent'] = agent1;
 			return runner.get(req);
 		}).then(function(res) {
 			count(req).should.equal(2);
-			res.headers.should.have.property('x-upcache-map', 'User-Agent=1');
+			res.headers.should.have.property('x-upcache-vary', 'User-Agent=1');
 			headers['User-Agent'] = agent2;
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-map', 'User-Agent=1');
+			res.headers.should.have.property('x-upcache-vary', 'User-Agent=1');
 			count(req).should.equal(2);
 			headers['User-Agent'] = agent3;
 			return runner.get(req);
 		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-map', 'User-Agent=2');
+			res.headers.should.have.property('x-upcache-vary', 'User-Agent=2');
 			count(req).should.equal(3);
 		});
 	});
