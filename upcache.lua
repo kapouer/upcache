@@ -34,9 +34,9 @@ function module.response()
 	local key = upkey(vars)
 	local nkey = key
 	if method == "GET" or method == "HEAD" then
-		nkey = Map.set(nkey, vars, ngx)
 		nkey = Lock.set(nkey, vars, ngx)
 		nkey = Vary.set(nkey, vars, ngx)
+		nkey = Map.set(nkey, vars, ngx)
 		nkey = Tag.set(nkey, vars, ngx)
 		if nkey == nil then
 			vars.storeSkip = 1
