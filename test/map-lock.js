@@ -82,10 +82,8 @@ describe("Map and Lock", function suite() {
 			})) {
 				map(res, testPathMapped);
 				res.status(403);
-				console.log("STATUS 403")
 			} else {
-				res.status(200);
-				console.log("STATUS 200")
+				res.status(200); // useless but indicates it's on purpose
 			}
 			res.send({
 				value: (req.path || '/').substring(1),
