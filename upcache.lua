@@ -26,10 +26,10 @@ function module.request()
 end
 
 function module.response()
-	if ngx.var.srcache_fetch_status == "HIT" then
+	local vars = ngx.var
+	if vars.srcache_fetch_status == "HIT" then
 		return
 	end
-	local vars = ngx.var
 	local method = ngx.req.get_method()
 	local key = upkey(vars)
 	local nkey = key
