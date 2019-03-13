@@ -107,16 +107,18 @@ local function get_jwt(conf, vars)
 	return jwt_obj.payload
 end
 
-local function requestHandshake(host)
-	local conf = common.get(upcacheLocks, host)
+local function request(vars)
+	local conf = common.get(upcacheLocks, vars.host)
 	if conf.key == nil then
 		ngx.req.set_header(headerKey, "1")
 	end
 	return conf
 end
-module.requestHandshake = requestHandshake
+module.request = request
 
-local function responseHandshake(host, headers)
+local function response(vars, ngx)
+	local host = vars.host
+	local headers = ngx.header
 	local varname = headers[headerVar]
 	local key = headers[headerKey]
 	local conf = common.get(upcacheLocks, host)
@@ -140,18 +142,16 @@ local function responseHandshake(host, headers)
 	end
 	return conf
 end
-module.responseHandshake = responseHandshake
+module.response = response
 
-function module.get(key, ngx)
-	local vars = ngx.var
-	local conf = requestHandshake(vars.host)
+function module.get(key, vars, ngx)
+	local conf = request(vars)
 	return build_key(key, get_locks(key), get_jwt(conf, vars))
 end
 
-function module.set(key, ngx)
+function module.set(key, vars, ngx)
 	local headers = ngx.header
-	local vars = ngx.var
-	local conf = responseHandshake(vars.host, headers)
+	local conf = response(vars, ngx)
 	local locks = common.parseHeader(headers[headerLock])
 	if locks == nil then
 		return key

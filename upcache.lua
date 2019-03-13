@@ -4,53 +4,56 @@ local Tag = require "upcache.tag"
 local Vary = require "upcache.vary"
 local Map = require "upcache.map"
 local common = require "upcache.common"
+local console = common.console
 
 module._VERSION = "1"
 
 function module.request()
 	ngx.req.set_header(common.prefixHeader, module._VERSION)
-	local keyReq = upkey()
-	local nkeyReq = keyReq
+	local vars = ngx.var
 	local method = ngx.req.get_method()
 	if method == "GET" or method == "HEAD" then
-		nkeyReq = Lock.get(nkeyReq, ngx)
-		nkeyReq = Vary.get(nkeyReq, ngx)
-		nkeyReq = Map.get(nkeyReq)
+		local key = upkey(vars)
+		key = Lock.get(key, vars, ngx)
+		key = Vary.get(key, vars, ngx)
+		key = Map.get(key)
+		key = Tag.get(key)
+		vars.fetchKey = ngx.md5(key)
+		console.info("request key '", key, "'")
 	else
-		Lock.requestHandshake(ngx.var.host)
+		Lock.request(vars)
 	end
-	nkeyReq = Tag.get(nkeyReq)
-	ngx.var.fetchKey = ngx.md5(nkeyReq)
-	ngx.log(ngx.INFO, "request key '", nkeyReq, "'")
 end
 
 function module.response()
 	if ngx.var.srcache_fetch_status == "HIT" then
 		return
 	end
+	local vars = ngx.var
 	local method = ngx.req.get_method()
-	local keyRes = upkey()
-	local nkeyRes = keyRes
+	local key = upkey(vars)
+	local nkey = key
 	if method == "GET" or method == "HEAD" then
-		nkeyRes = Map.set(nkeyRes, ngx)
-		nkeyRes = Lock.set(nkeyRes, ngx)
-		nkeyRes = Vary.set(nkeyRes, ngx)
+		nkey = Map.set(nkey, vars, ngx)
+		nkey = Lock.set(nkey, vars, ngx)
+		nkey = Vary.set(nkey, vars, ngx)
+		nkey = Tag.set(nkey, vars, ngx)
+		if nkey == nil then
+			vars.storeSkip = 1
+		elseif nkey ~= key then
+			vars.storeKey = ngx.md5(nkey)
+		else
+			vars.storeKey = vars.fetchKey
+		end
+		console.info("response key '", nkey, "'")
 	else
-		Lock.responseHandshake(ngx.var.host, ngx.header)
+		Lock.response(vars, ngx)
+		Tag.response(vars, ngx)
 	end
-	nkeyRes = Tag.set(nkeyRes, ngx)
-	if nkeyRes == nil then
-		ngx.var.storeSkip = 1
-	elseif nkeyRes ~= keyRes then
-		ngx.var.storeKey = ngx.md5(nkeyRes)
-	else
-		ngx.var.storeKey = ngx.var.fetchKey
-	end
-	ngx.log(ngx.INFO, "response key '", nkeyRes, "'")
 end
 
-function upkey()
-	return (ngx.var.https == "on" and "https" or "http") .. "://" .. ngx.var.host .. ngx.var.request_uri
+function upkey(vars)
+	return (vars.https == "on" and "https" or "http") .. "://" .. vars.host .. vars.request_uri
 end
 
 return module

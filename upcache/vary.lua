@@ -19,7 +19,7 @@ local function build_key(key, headers, maps)
 	return key
 end
 
-function module.get(key, ngx)
+function module.get(key, vars, ngx)
 	local maps = common.get(common.variants, key, 'vary')
 	if maps == nil then
 		return key
@@ -27,13 +27,13 @@ function module.get(key, ngx)
 	return build_key(key, ngx.req.get_headers(), maps)
 end
 
-function module.set(key, ngx)
+function module.set(key, vars, ngx)
 	local header = ngx.header[varyHeader]
 	if header == nil
 		then return key
 	end
 	local name, hash = header:match("^([^=]+)=([^=]+)$")
-	local val = ngx.var['http_' .. name:gsub('-', '_'):lower()]
+	local val = vars['http_' .. name:gsub('-', '_'):lower()]
 	if val == nil then
 		return key
 	end
