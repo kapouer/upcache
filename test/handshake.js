@@ -7,6 +7,8 @@ var cookie = require('cookie');
 var express = require('express');
 
 var runner = require('../lib/spawner');
+var common = require('./common');
+
 var locker = require('..').lock({
 	privateKey: fs.readFileSync(Path.join(__dirname, 'fixtures/private.pem')).toString(),
 	publicKey: fs.readFileSync(Path.join(__dirname, 'fixtures/public.pem')).toString(),
@@ -81,7 +83,7 @@ describe("Lock", function suite() {
 			});
 		});
 
-		app.use(runner.errorHandler);
+		app.use(common.errorHandler);
 	});
 
 	afterEach(function(done) {
@@ -104,7 +106,7 @@ describe("Lock", function suite() {
 			},
 			cookie: function() {}
 		};
-		return runner.post({
+		return common.post({
 			port: ports.ngx,
 			path: testPathWildcardMultiple,
 			headers: {
@@ -114,11 +116,11 @@ describe("Lock", function suite() {
 			}
 		}).then(function(res) {
 			res.headers.should.not.have.property('x-upcache-key-handshake');
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			firstDate = res.body.date;
-			return runner.post({
+			return common.post({
 				port: ports.ngx,
 				path: '/login?scope=test'
 			});
@@ -126,7 +128,7 @@ describe("Lock", function suite() {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			res.body.date.should.not.equal(firstDate);

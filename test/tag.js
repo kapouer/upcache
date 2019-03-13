@@ -5,6 +5,8 @@ var URL = require('url');
 var express = require('express');
 
 var runner = require('../lib/spawner');
+var common = require('./common');
+
 var tag = require('..').tag;
 
 var ports = {
@@ -109,7 +111,7 @@ describe("Tag", function suite() {
 			res.send("ok");
 		});
 
-		app.use(runner.errorHandler);
+		app.use(common.errorHandler);
 	});
 
 	after(function(done) {
@@ -122,9 +124,9 @@ describe("Tag", function suite() {
 			port: ports.ngx,
 			path: testPath
 		};
-		return runner.get(req).then(function(res) {
+		return common.get(req).then(function(res) {
 			res.headers.should.have.property('x-upcache-tag', 'test');
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.headers.should.have.property('x-upcache-tag', 'test');
 			count(req).should.equal(1);
@@ -137,14 +139,14 @@ describe("Tag", function suite() {
 			port: ports.ngx,
 			path: testPath
 		};
-		return runner.get(req)
+		return common.get(req)
 		.then(function(res) {
 			firstDate = Date.parse(res.body.date);
 			res.headers.should.have.property('x-upcache-tag', 'test');
-			return runner.post(req, 'postbody');
+			return common.post(req, 'postbody');
 		}).then(function(res) {
 			res.headers.should.have.property('x-upcache-tag', '+test');
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			Date.parse(res.body.date).should.be.greaterThan(firstDate);
 		});
@@ -156,14 +158,14 @@ describe("Tag", function suite() {
 			port: ports.ngx,
 			path: "/multiple"
 		};
-		return runner.get(req)
+		return common.get(req)
 		.then(function(res) {
 			firstDate = Date.parse(res.body.date);
 			res.headers.should.have.property('x-upcache-tag', 'one, two');
-			return runner.post(req, 'postbody');
+			return common.post(req, 'postbody');
 		}).then(function(res) {
 			res.headers.should.have.property('x-upcache-tag', '+two');
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			Date.parse(res.body.date).should.be.greaterThan(firstDate);
 		});
@@ -175,17 +177,17 @@ describe("Tag", function suite() {
 			port: ports.ngx,
 			path: testPath
 		};
-		return runner.get(req)
+		return common.get(req)
 		.then(function(res) {
 			firstDate = Date.parse(res.body.date);
 			res.headers.should.have.property('x-upcache-tag', 'test');
-			return runner.post({
+			return common.post({
 				port: ports.ngx,
 				path: "/a"
 			}, 'postbody');
 		}).then(function(res) {
 			res.headers.should.have.property('x-upcache-tag', '+test');
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			Date.parse(res.body.date).should.be.greaterThan(firstDate);
 		});
@@ -198,11 +200,11 @@ describe("Tag", function suite() {
 			port: ports.ngx,
 			path: conditionalPath
 		};
-		return runner.get(req).then(function(res) {
+		return common.get(req).then(function(res) {
 			res.headers.should.have.property('etag');
 			var etag = res.headers.etag;
 			headers['If-None-Match'] = res.headers.etag;
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.statusCode.should.equal(304);
 			count(req).should.equal(1);
@@ -217,10 +219,10 @@ describe("Tag", function suite() {
 			path: conditionalPathNot
 		};
 		headers['If-None-Match'] = 'W/"myetagnot"';
-		return runner.get(req).then(function(res) {
+		return common.get(req).then(function(res) {
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.statusCode.should.equal(304);
 			count(req).should.equal(1);
@@ -234,10 +236,10 @@ describe("Tag", function suite() {
 			port: ports.ngx,
 			path: untaggedPath
 		};
-		return runner.get(req).then(function(res) {
+		return common.get(req).then(function(res) {
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			count(req).should.equal(2);
@@ -249,9 +251,9 @@ describe("Tag", function suite() {
 			port: ports.ngx,
 			path: '/multiplesame'
 		};
-		return runner.get(req).then(function(res) {
+		return common.get(req).then(function(res) {
 			res.headers.should.have.property('x-upcache-tag', '+one, two, three');
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.headers.should.have.property('x-upcache-tag', '+one, two, three');
 			count(req).should.equal(1);

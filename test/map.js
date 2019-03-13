@@ -4,6 +4,8 @@ var URL = require('url');
 var express = require('express');
 
 var runner = require('../lib/spawner');
+var common = require('./common');
+
 var map = require('..').map;
 var tag = require('..').tag;
 
@@ -69,14 +71,14 @@ describe("Map", function suite() {
 			path: mappedTestPath
 		};
 		var result;
-		return runner.get(req).then(function(res) {
+		return common.get(req).then(function(res) {
 			result = res.body.toString();
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.body.toString().should.equal(result);
 			count(req).should.equal(1);
 			res.headers.should.have.property('x-upcache-map', mappedTestPath);
-			return runner.get(reqm);
+			return common.get(reqm);
 		}).then(function(res) {
 			res.body.toString().should.equal(result);
 			count(req).should.equal(1);

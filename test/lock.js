@@ -7,6 +7,8 @@ var express = require('express');
 var assert = require('assert');
 
 var runner = require('../lib/spawner');
+var common = require('./common');
+
 var scope = require('..').lock({
 	privateKey: fs.readFileSync(Path.join(__dirname, 'fixtures/private.pem')).toString(),
 	publicKey: fs.readFileSync(Path.join(__dirname, 'fixtures/public.pem')).toString(),
@@ -137,7 +139,7 @@ describe("Lock", function suite() {
 			else res.sendStatus(403);
 		});
 
-		app.use(runner.errorHandler);
+		app.use(common.errorHandler);
 	});
 
 	after(function(done) {
@@ -154,7 +156,7 @@ describe("Lock", function suite() {
 			port: ports.app,
 			path: testPath
 		};
-		return runner.get(req).then(function(res) {
+		return common.get(req).then(function(res) {
 			res.statusCode.should.equal(401);
 			count(req).should.equal(0);
 		});
@@ -167,14 +169,14 @@ describe("Lock", function suite() {
 			port: ports.app,
 			path: testPath
 		};
-		return runner.post({
+		return common.post({
 			port: ports.app,
 			path: '/login'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.headers.should.have.property('x-upcache-lock', 'bookReader, bookSecond');
 			count(req).should.equal(1);
@@ -188,14 +190,14 @@ describe("Lock", function suite() {
 			port: ports.app,
 			path: testPathNotGranted
 		};
-		return runner.post({
+		return common.post({
 			port: ports.app,
 			path: '/login'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.statusCode.should.equal(403);
 			count(req).should.equal(0);
@@ -204,21 +206,21 @@ describe("Lock", function suite() {
 
 	it("should log in, access, then log out, and be denied access without proxy", function() {
 		var headers = {};
-		return runner.post({
+		return common.post({
 			port: ports.app,
 			path: '/login'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get({
+			return common.get({
 				headers: headers,
 				port: ports.app,
 				path: testPath
 			});
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
-			return runner.post({
+			return common.post({
 				headers: headers,
 				port: ports.app,
 				path: "/logout"
@@ -227,7 +229,7 @@ describe("Lock", function suite() {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get({
+			return common.get({
 				headers: headers,
 				port: ports.app,
 				path: testPath
@@ -242,7 +244,7 @@ describe("Lock", function suite() {
 			port: ports.ngx,
 			path: testPath
 		};
-		return runner.get(req).then(function(res) {
+		return common.get(req).then(function(res) {
 			res.statusCode.should.equal(401);
 			count(req).should.equal(0);
 		});
@@ -255,20 +257,20 @@ describe("Lock", function suite() {
 			port: ports.ngx,
 			path: testPath
 		};
-		return runner.post({
+		return common.post({
 			port: ports.ngx,
 			path: '/login'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.headers.should.not.have.property('x-upcache-lock-key');
 			res.headers.should.have.property('x-upcache-lock', 'bookReader, bookSecond');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			// because it should be a cache hit
@@ -283,7 +285,7 @@ describe("Lock", function suite() {
 			port: ports.ngx,
 			path: testPathHeadersSetting
 		};
-		return runner.get(req).then(function(res) {
+		return common.get(req).then(function(res) {
 			res.headers.should.have.property('x-upcache-lock', 'dynA, dynB, dynC, dynD, dynE');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
@@ -297,14 +299,14 @@ describe("Lock", function suite() {
 			port: ports.ngx,
 			path: testPathNotGranted
 		};
-		return runner.post({
+		return common.post({
 			port: ports.ngx,
 			path: '/login'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.statusCode.should.equal(403);
 			count(req).should.equal(0);
@@ -313,21 +315,21 @@ describe("Lock", function suite() {
 
 	it("should log in, access, then log out, and be denied access with proxy", function() {
 		var headers = {};
-		return runner.post({
+		return common.post({
 			port: ports.ngx,
 			path: '/login'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get({
+			return common.get({
 				headers: headers,
 				port: ports.ngx,
 				path: testPath
 			});
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
-			return runner.post({
+			return common.post({
 				headers: headers,
 				port: ports.ngx,
 				path: "/logout"
@@ -336,7 +338,7 @@ describe("Lock", function suite() {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get({
+			return common.get({
 				headers: headers,
 				port: ports.ngx,
 				path: testPath
@@ -354,18 +356,18 @@ describe("Lock", function suite() {
 			path: testPath
 		};
 		var firstDate;
-		return runner.post({
+		return common.post({
 			port: ports.ngx,
 			path: '/login?scope=bookReader'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			firstDate = res.body.date;
-			return runner.post({
+			return common.post({
 				port: ports.ngx,
 				path: '/login?scope=bookSecond'
 			});
@@ -373,7 +375,7 @@ describe("Lock", function suite() {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			res.body.date.should.not.equal(firstDate);
@@ -388,18 +390,18 @@ describe("Lock", function suite() {
 			path: testPathWildcardMultiple
 		};
 		var firstDate;
-		return runner.post({
+		return common.post({
 			port: ports.ngx,
 			path: '/login?scope=book1&scope=book2'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			firstDate = res.body.date;
-			return runner.post({
+			return common.post({
 				port: ports.ngx,
 				path: '/login?scope=book3&scope=book2'
 			});
@@ -407,7 +409,7 @@ describe("Lock", function suite() {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			res.body.date.should.not.equal(firstDate);
@@ -422,10 +424,10 @@ describe("Lock", function suite() {
 			path: testPathWildcard
 		};
 		var firstDate;
-		return runner.get(req).then(function(res) {
+		return common.get(req).then(function(res) {
 			res.statusCode.should.equal(200);
 			firstDate = res.body.date;
-			return runner.post({
+			return common.post({
 				port: ports.ngx,
 				path: '/login?redirect=' + encodeURIComponent(testPathWildcard),
 			});
@@ -433,7 +435,7 @@ describe("Lock", function suite() {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.statusCode.should.equal(200);
 			res.body.date.should.not.equal(firstDate);
@@ -448,20 +450,20 @@ describe("Lock", function suite() {
 			path: '/user/45'
 		};
 		var firstDate;
-		return runner.post({
+		return common.post({
 			port: ports.app,
 			path: '/login?id=45'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.headers.should.have.property('x-upcache-lock', 'user-:id');
 			res.statusCode.should.equal(200);
 			res.body.id.should.equal(45);
 			req.path += '1';
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.statusCode.should.equal(403);
 		});
@@ -474,20 +476,20 @@ describe("Lock", function suite() {
 			port: ports.ngx,
 			path: '/user/45'
 		};
-		return runner.post({
+		return common.post({
 			port: ports.ngx,
 			path: '/login?id=45'
 		}).then(function(res) {
 			res.headers.should.have.property('set-cookie');
 			var cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.headers.should.have.property('x-upcache-lock', 'user-:id');
 			res.statusCode.should.equal(200);
 			res.body.id.should.equal(45);
 			req.path += '1';
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.statusCode.should.equal(403);
 		});

@@ -5,6 +5,8 @@ var URL = require('url');
 var express = require('express');
 
 var runner = require('../lib/spawner');
+var common = require('./common');
+
 var vary = require('..').vary;
 var tag = require('..').tag;
 
@@ -71,24 +73,24 @@ describe("Vary", function suite() {
 			port: ports.ngx,
 			path: testPath
 		};
-		return runner.get(req).then(function() {
+		return common.get(req).then(function() {
 			headers['User-Agent'] = agent2;
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			count(req).should.equal(2);
 			res.headers.should.have.property('x-upcache-vary', 'User-Agent=1');
 			headers['User-Agent'] = agent1;
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			count(req).should.equal(2);
 			res.headers.should.have.property('x-upcache-vary', 'User-Agent=1');
 			headers['User-Agent'] = agent2;
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.headers.should.have.property('x-upcache-vary', 'User-Agent=1');
 			count(req).should.equal(2);
 			headers['User-Agent'] = agent3;
-			return runner.get(req);
+			return common.get(req);
 		}).then(function(res) {
 			res.headers.should.have.property('x-upcache-vary', 'User-Agent=2');
 			count(req).should.equal(3);
