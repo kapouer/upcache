@@ -2,6 +2,7 @@ local module = {}
 local Lock = require "upcache.lock"
 local Tag = require "upcache.tag"
 local Vary = require "upcache.vary"
+local Map = require "upcache.map"
 local common = require "upcache.common"
 
 module._VERSION = "1"
@@ -12,11 +13,12 @@ function module.request()
 	local nkeyReq = keyReq
 	local method = ngx.req.get_method()
 	if method == "GET" or method == "HEAD" then
-		nkeyReq = Lock.get(nkeyReq, ngx.var)
+		nkeyReq = Lock.get(nkeyReq, ngx)
+		nkeyReq = Vary.get(nkeyReq, ngx)
+		nkeyReq = Map.get(nkeyReq)
 	else
 		Lock.requestHandshake(ngx.var.host)
 	end
-	nkeyReq = Vary.get(nkeyReq, ngx)
 	nkeyReq = Tag.get(nkeyReq)
 	ngx.var.fetchKey = ngx.md5(nkeyReq)
 	ngx.log(ngx.INFO, "request key '", nkeyReq, "'")
@@ -30,12 +32,13 @@ function module.response()
 	local keyRes = upkey()
 	local nkeyRes = keyRes
 	if method == "GET" or method == "HEAD" then
-		nkeyRes = Lock.set(nkeyRes, ngx.var, ngx.header)
+		nkeyRes = Map.set(nkeyRes, ngx)
+		nkeyRes = Lock.set(nkeyRes, ngx)
+		nkeyRes = Vary.set(nkeyRes, ngx)
 	else
 		Lock.responseHandshake(ngx.var.host, ngx.header)
 	end
-	nkeyRes = Vary.set(nkeyRes, ngx)
-	nkeyRes = Tag.set(nkeyRes, ngx.header)
+	nkeyRes = Tag.set(nkeyRes, ngx)
 	if nkeyRes == nil then
 		ngx.var.storeSkip = 1
 	elseif nkeyRes ~= keyRes then

@@ -9,6 +9,7 @@ Upcache has several ways of changing the cache keys:
 - [tag](./README-tag.md), version resources by zones
 - [lock](./README-lock.md), vary on client json web token grants
 - [vary](./README-vary.md), vary by grouping selected request headers
+- [map](./README-map.md), maps a request uri to another request uri
 
 
 Requirements

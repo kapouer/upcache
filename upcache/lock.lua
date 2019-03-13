@@ -142,12 +142,15 @@ local function responseHandshake(host, headers)
 end
 module.responseHandshake = responseHandshake
 
-function module.get(key, vars)
+function module.get(key, ngx)
+	local vars = ngx.var
 	local conf = requestHandshake(vars.host)
 	return build_key(key, get_locks(key), get_jwt(conf, vars))
 end
 
-function module.set(key, vars, headers)
+function module.set(key, ngx)
+	local headers = ngx.header
+	local vars = ngx.var
 	local conf = responseHandshake(vars.host, headers)
 	local locks = common.parseHeader(headers[headerLock])
 	if locks == nil then

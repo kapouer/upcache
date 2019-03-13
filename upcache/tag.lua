@@ -24,8 +24,8 @@ function module.get(key)
 	return build_key(key, common.get(common.variants, key, 'tags'))
 end
 
-function module.set(key, headers)
-	local tags = common.parseHeader(headers[tagHeader])
+function module.set(key, ngx)
+	local tags = common.parseHeader(ngx.header[tagHeader])
 	if tags == nil
 		then return nil
 	end
