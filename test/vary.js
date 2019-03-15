@@ -20,6 +20,7 @@ describe("Vary", function suite() {
 	var testPath = '/vary-test';
 	var testNegotiation = '/nego';
 	var testLanguage = "/lang";
+	var testMulti = "/multi";
 	var counters = {};
 
 	function count(uri, inc) {
@@ -77,6 +78,26 @@ describe("Vary", function suite() {
 			} else {
 				res.set('Content-Language', 'pt');
 				res.send('Bem !');
+			}
+		});
+
+		app.get(testMulti, tag('app'), function(req, res, next) {
+			res.vary('Accept-Language').vary('Accept');
+			count(req, 1);
+			var langs = ['en', 'fr'];
+			var str = "Bad";
+			if (req.acceptsLanguages(langs) == 'en') {
+				res.set('Content-Language', 'en');
+				str = "Good";
+			} else if (req.acceptsLanguages(langs) == 'fr') {
+				res.set('Content-Language', 'fr');
+				str = "Bien";
+			}
+			if (req.accepts('xml')) {
+				res.type('application/xml');
+				res.send(`<xml>${str}</xml>`);
+			} else if (req.accepts('json')) {
+				res.json({xml: str});
 			}
 		});
 	});
@@ -201,6 +222,54 @@ describe("Vary", function suite() {
 		}).then(function(res) {
 			res.headers.should.have.property('vary', 'Accept-Language');
 			res.headers.should.have.property('content-language', 'en');
+			count(req).should.equal(3);
+		});
+	});
+
+	it("should vary upon Accept-Language and Accept", function() {
+		var headers = {};
+		var req = {
+			headers: headers,
+			port: ports.ngx,
+			path: testMulti
+		};
+		var english = "fr;q=0.8, en, pt";
+		var french = "fr;q=0.8, en;q=0.7, pt;q=0.5";
+		req.headers['Accept-Language'] = english;
+		req.headers.Accept = "application/json";
+
+		return common.get(req).then(function(res) {
+			res.headers.should.have.property('vary', 'Accept-Language, Accept');
+			res.headers.should.have.property('content-language', 'en');
+			res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
+			req.headers['Accept-Language'] = french;
+			return common.get(req);
+		}).then(function(res) {
+			count(req).should.equal(2);
+			res.headers.should.have.property('vary', 'Accept-Language, Accept');
+			res.headers.should.have.property('content-language', 'fr');
+			res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
+			req.headers['Accept-Language'] = english;
+			return common.get(req);
+		}).then(function(res) {
+			count(req).should.equal(2);
+			res.headers.should.have.property('vary', 'Accept-Language, Accept');
+			res.headers.should.have.property('content-language', 'en');
+			res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
+			req.headers.Accept = "application/xml";
+			return common.get(req);
+		}).then(function(res) {
+			res.headers.should.have.property('vary', 'Accept-Language, Accept');
+			res.headers.should.have.property('content-language', 'en');
+			res.headers.should.have.property('content-type', 'application/xml; charset=utf-8');
+			count(req).should.equal(3);
+			req.headers['Accept-Language'] = french;
+			req.headers.Accept = "application/json";
+			return common.get(req);
+		}).then(function(res) {
+			res.headers.should.have.property('vary', 'Accept-Language, Accept');
+			res.headers.should.have.property('content-language', 'fr');
+			res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
 			count(req).should.equal(3);
 		});
 	});
