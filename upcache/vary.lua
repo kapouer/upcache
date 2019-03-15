@@ -6,14 +6,14 @@ local module = {}
 local varyHeader = "Vary"
 
 local function build_key(key, headers, list)
-	local val
-	local rval
-	for name, map in pairs(list) do
-		val = headers[name]
-		if val ~= nil then
-			rval = map[val]
-			if rval ~= nil then
-				key = name .. '->' .. rval .. ' ' .. key
+	local resVal
+	local reqVal
+	for reqName, map in pairs(list) do
+		reqVal = headers[reqName]
+		if reqVal ~= nil then
+			resVal = map[reqVal]
+			if resVal ~= nil then
+				key = reqName .. '->' .. resVal .. ' ' .. key
 			end
 		end
 	end
@@ -29,8 +29,8 @@ function module.get(key, vars, ngx)
 end
 
 function module.set(key, vars, ngx)
-	local headers = ngx.header
-	local varies = common.parseHeader(headers[varyHeader])
+	local resHeaders = ngx.header
+	local varies = common.parseHeader(resHeaders[varyHeader])
 	if varies == nil then
 		return key
 	end
@@ -38,27 +38,26 @@ function module.set(key, vars, ngx)
 	if list == nil then
 		list = {}
 	end
-	local val, rval, ok = false
-	local rheaders = ngx.req.get_headers()
-	local header
-	for i, rheader in ipairs(varies) do
-		if rheader == "Accept" then
-			header = "Content-Type"
-		elseif rheader:sub(1, 7) == "Accept-" then
-			header = "Content-" .. rheader:sub(7)
+	local ok = false
+	local reqHeaders = ngx.req.get_headers()
+	local resName, resVal, reqName, reqVal
+	for i, reqName in ipairs(varies) do
+		if reqName == "Accept" then
+			resName = "Content-Type"
+		elseif reqName:sub(1, 7) == "Accept-" then
+			resName = "Content-" .. reqName:sub(8)
 		else
-			header = rheader
+			resName = reqName
 		end
-		console.info(rheader, " -> ", header)
-		val = rheaders[rheader]
-		rval = headers[header]
-		if val ~= nil and rval ~= nil then
-			map = list[rheader]
+		reqVal = reqHeaders[reqName]
+		resVal = resHeaders[resName]
+		if resVal ~= nil and reqVal ~= nil then
+			map = list[reqName]
 			if map == nil then
 				map = {}
-				list[rheader] = map
+				list[reqName] = map
 			end
-			map[val] = rval
+			map[reqVal] = resVal
 			ok = true
 		end
 	end
@@ -66,7 +65,7 @@ function module.set(key, vars, ngx)
 		return key
 	end
 	common.set(common.variants, key, list, 'vary')
-	return build_key(key, rheaders, list)
+	return build_key(key, reqHeaders, list)
 end
 
 return module;
