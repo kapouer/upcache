@@ -18,8 +18,10 @@ build = {
    type = "builtin",
    modules = {
       ['upcache'] = "upcache.lua",
-      ['upcache.scope'] = "upcache/scope.lua",
+      ['upcache.lock'] = "upcache/lock.lua",
       ['upcache.tag'] = "upcache/tag.lua",
+      ['upcache.map'] = "upcache/map.lua",
+      ['upcache.vary'] = "upcache/vary.lua",
       ['upcache.common'] = "upcache/common.lua"
    },
    copy_directories = { "nginx" }
