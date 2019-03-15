@@ -3,16 +3,17 @@ local console = common.console
 
 local module = {}
 
-local varyHeader = common.prefixHeader .. "-Vary"
+local varyHeader = "Vary"
 
-local function build_key(key, headers, maps)
-	local val, hash
-	for name, map in pairs(maps) do
+local function build_key(key, headers, list)
+	local val
+	local rval
+	for name, map in pairs(list) do
 		val = headers[name]
 		if val ~= nil then
-			hash = map[val]
-			if hash ~= nil then
-				key = name .. '->' .. hash .. ' ' .. key
+			rval = map[val]
+			if rval ~= nil then
+				key = name .. '->' .. rval .. ' ' .. key
 			end
 		end
 	end
@@ -20,35 +21,52 @@ local function build_key(key, headers, maps)
 end
 
 function module.get(key, vars, ngx)
-	local maps = common.get(common.variants, key, 'vary')
-	if maps == nil then
+	local list = common.get(common.variants, key, 'vary')
+	if list == nil then
 		return key
 	end
-	return build_key(key, ngx.req.get_headers(), maps)
+	return build_key(key, ngx.req.get_headers(), list)
 end
 
 function module.set(key, vars, ngx)
-	local header = ngx.header[varyHeader]
-	if header == nil
-		then return key
-	end
-	local name, hash = header:match("^([^=]+)=([^=]+)$")
-	local val = vars['http_' .. name:gsub('-', '_'):lower()]
-	if val == nil then
+	local headers = ngx.header
+	local varies = common.parseHeader(headers[varyHeader])
+	if varies == nil then
 		return key
 	end
-	local maps = common.get(common.variants, key, 'vary')
-	if maps == nil then
-		maps = {}
+	local list = common.get(common.variants, key, 'vary')
+	if list == nil then
+		list = {}
 	end
-	local map = maps[name]
-	if map == nil then
-		map = {}
-		maps[name] = map
+	local val, rval, ok = false
+	local rheaders = ngx.req.get_headers()
+	local header
+	for i, rheader in ipairs(varies) do
+		if rheader == "Accept" then
+			header = "Content-Type"
+		elseif rheader:sub(1, 7) == "Accept-" then
+			header = "Content-" .. rheader:sub(7)
+		else
+			header = rheader
+		end
+		console.info(rheader, " -> ", header)
+		val = rheaders[rheader]
+		rval = headers[header]
+		if val ~= nil and rval ~= nil then
+			map = list[rheader]
+			if map == nil then
+				map = {}
+				list[rheader] = map
+			end
+			map[val] = rval
+			ok = true
+		end
 	end
-	map[val] = hash
-	common.set(common.variants, key, maps, 'vary')
-	return build_key(key, ngx.req.get_headers(), maps)
+	if ok == false then
+		return key
+	end
+	common.set(common.variants, key, list, 'vary')
+	return build_key(key, rheaders, list)
 end
 
 return module;

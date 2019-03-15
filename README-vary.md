@@ -1,29 +1,67 @@
 Upcache Vary
 ============
 
-Varies specific request headers values to application-defined values.
+`Vary` response header can configure cache key by mapping a request header value
+to a response header value.
 
-Introduction
-------------
+There are two cases:
 
-The application may need to send different content for the same url,
-by varying on a specific request header.
+- legacy Vary, request value is mapped to cache key value with a different
+response header than the request header, seen with Accept* content negotiation.
+- modern Vary, request value is mapped with the same response header than the
+request header, seen with Client Hints.
 
-Also the response may be the same for many different request headers upon
-which the content vary.
 
-The logic is often only known by the application, thus Upcache Vary helps by
-letting the proxy build cache keys based on mappings obtained through the
-application response http headers.
+## Vary on Accept
 
-Typical examples: user-agent polyfills, language negotiation, ...
+Vary: Accept
+Content-Type: <Value>
+
+The request Accept value is mapped to the response Content-Type value to build
+the cache key.
+
+
+## Vary on Accept-<Name>
+
+Vary: Accept-<Name>
+Content-<Name>: <Value>
+
+The request Accept-X header value is mapped to the response Content-X header
+value to build the cache key.
+
+
+## Vary on <HeaderName>
+
+Vary: <Name>
+<Name>: <MappedValue>
+
+If there is no <Name> response header, the request <Name> header value is used
+directly to build the cache key.
+
+However this behavior is really not optimal, especially when dealing with
+User-Agent or other very variable request headers.
+
+Similar to content negotiation, or Client Hints, setting the header value in the
+response will allow a mapping from request value to response value.
+
+request:
+```
+User-Agent: Mozilla/5.0 AppleWebKit/537.36 Chrome/73.0.3683.75 Safari/537.36
+```
+
+response:
+```
+Vary: User-Agent
+User-Agent: chrome/73.0.0
+```
 
 
 Usage
 -----
 
+There is no js module since it's only a matter of setting standard headers.
+
 ```
-const vary = require('upcache').vary;
 const tag = require('upcache').tag;
 const polyfills = require('polyfill-library');
 
@@ -38,7 +76,8 @@ app.get('/polyfill.js', tag('app'), function(req, res, next) {
   // let's assume polyfills already caches bundles by targetedFeatures
   polyfills.getPolyfills(opts).then(function({targetedFeatures, bundle}) {
     var hashKey = objectHash(targetedFeatures);
-    vary(res, 'User-Agent', hashKey);
+    res.vary('User-Agent');
+    res.set('User-Agent', hashkey);
     res.send(bundle);
   });
 });
@@ -47,11 +86,5 @@ app.get('/polyfill.js', tag('app'), function(req, res, next) {
 http response headers
 ---------------------
 
-* X-Upcache-Vary  
-  header-name=value
-
-This header is enough to configure the proxy so it maps the request header
-value to the given value in the response.
-
-The header-name=response-value is then part of the cache key.
+All standard headers discussed above.
 
