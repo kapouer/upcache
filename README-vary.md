@@ -8,7 +8,7 @@ There are two cases:
 
 - legacy Vary, request value is mapped to cache key value with a different
 response header than the request header, seen with Accept* content negotiation.
-- modern Vary, request value is mapped with the same response header than the
+- modern Vary, request value is mapped with the same response header as the
 request header, seen with Client Hints.
 
 
