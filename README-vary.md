@@ -13,27 +13,30 @@ request header, seen with Client Hints.
 
 
 ## Vary on Accept
-
+```
 Vary: Accept
 Content-Type: <Value>
+```
 
 The request Accept value is mapped to the response Content-Type value to build
 the cache key.
 
 
 ## Vary on Accept-<Name>
-
+```
 Vary: Accept-<Name>
 Content-<Name>: <Value>
+```
 
 The request Accept-X header value is mapped to the response Content-X header
 value to build the cache key.
 
 
 ## Vary on <HeaderName>
-
+```
 Vary: <Name>
 <Name>: <MappedValue>
+```
 
 If there is no <Name> response header, the request <Name> header value is used
 directly to build the cache key.
