@@ -144,6 +144,10 @@ local function response(vars, ngx)
 end
 module.response = response
 
+function module.jwt(vars, ngx)
+	return console.encode(get_jwt(request(vars), vars))
+end
+
 function module.get(key, vars, ngx)
 	local conf = request(vars)
 	return build_key(key, get_locks(key), get_jwt(conf, vars))

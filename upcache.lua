@@ -8,6 +8,8 @@ local console = common.console
 
 module._VERSION = "1"
 
+module.jwt = Lock.jwt
+
 function module.request()
 	ngx.req.set_header(common.prefixHeader, module._VERSION)
 	local vars = ngx.var
