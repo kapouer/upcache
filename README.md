@@ -11,6 +11,7 @@ Upcache has several ways of changing the cache keys:
 - [vary](./README-vary.md), vary by grouping selected request headers
 - [map](./README-map.md), maps a request uri to another request uri
 
+**Breaking change**: server.d/upcache.conf is now server.d/upcache-memcached.conf
 
 Requirements
 ------------
@@ -21,7 +22,7 @@ Requirements
   srcache-nginx-module  
   memc-nginx-module (if using memcached)
 
-- memcached or redis  
+- memcached or redis
 
 - a Node.js express app
 
