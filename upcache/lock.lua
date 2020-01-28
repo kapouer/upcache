@@ -37,7 +37,7 @@ local function authorize(locks, token)
 	for i, lock in ipairs(locks) do
 		found = false
 		if lock:find("%*") and token.grants ~= nil then
-			regstr = "^" .. quoteReg(lock):gsub('*', '.*') .. "$"
+			local regstr = "^" .. quoteReg(lock):gsub('*', '.*') .. "$"
 			for i, grant in ipairs(token.grants) do
 				if grant:find(regstr) ~= nil then
 					table.insert(grants, grant)

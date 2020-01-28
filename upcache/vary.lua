@@ -52,7 +52,7 @@ function module.set(key, vars, ngx)
 		reqVal = reqHeaders[reqName]
 		resVal = resHeaders[resName]
 		if resVal ~= nil and reqVal ~= nil then
-			map = list[reqName]
+			local map = list[reqName]
 			if map == nil then
 				map = {}
 				list[reqName] = map
