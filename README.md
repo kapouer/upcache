@@ -19,10 +19,9 @@ Requirements
   lua-nginx-module (with luajit enabled or else it fails with missing ffi package)  
   set-misc-nginx-module  
   srcache-nginx-module  
-  memc-nginx-module
+  memc-nginx-module (if using memcached)
 
-- memcached  
-  libmemcached-tools (optional)
+- memcached or redis  
 
 - a Node.js express app
 
@@ -94,5 +93,4 @@ License
 -------
 
 See LICENSE file.
-
 
