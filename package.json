@@ -29,7 +29,7 @@
     "url": "https://github.com/kapouer/upcache/issues"
   },
   "dependencies": {
-    "cookie": "^0.4.0",
+    "cookie": "^0.4.1",
     "dashdash": "^1.14.0",
     "debug": "^2.6.9",
     "express-cache-response-directive": "^1.1.0",
