@@ -1,6 +1,6 @@
 {
   "name": "upcache",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "nginx proxy cache key protocols implementations",
   "scripts": {
     "test": "mocha",
@@ -20,7 +20,7 @@
     "upstream"
   ],
   "bin": {
-    "upcache": "./bin/upcache.js"
+    "upcache": "bin/upcache.js"
   },
   "main": "./lib/index.js",
   "author": "Jérémy Lal <kapouer@melix.org>",
