@@ -57,11 +57,13 @@ describe("Vary", function suite() {
 		app.get(testNegotiation, tag('app'), function(req, res, next) {
 			res.vary('Accept');
 			count(req, 1);
-			if (req.accepts('xml')) {
+			if (req.accepts(['xml', 'html']) == 'xml') {
 				res.type('application/xml');
 				res.send('<xml></xml>');
 			} else if (req.accepts('json')) {
 				res.json({xml: true});
+			} else {
+				res.sendStatus(406);
 			}
 		});
 
@@ -158,31 +160,39 @@ describe("Vary", function suite() {
 			port: ports.ngx,
 			path: testNegotiation
 		};
-		req.headers.Accept = "application/xml";
-		return common.get(req).then(function() {
+		return common.get(req).then(function (res) {
+			count(req).should.equal(1);
+			return common.get(req);
+		}).then(function () {
+			count(req).should.equal(1);
 			req.headers.Accept = "application/json";
 			return common.get(req);
-		}).then(function(res) {
+		}).then(function (res) {
 			count(req).should.equal(2);
 			res.headers.should.have.property('vary', 'Accept');
 			res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
+			req.headers.Accept = "text/plain";
+			return common.get(req);
+		}).then(function (res) {
+			res.statusCode.should.equal(406);
+			count(req).should.equal(3);
 			req.headers.Accept = "application/xml";
 			return common.get(req);
 		}).then(function(res) {
-			count(req).should.equal(2);
+			count(req).should.equal(4);
 			res.headers.should.have.property('vary', 'Accept');
 			res.headers.should.have.property('content-type', 'application/xml; charset=utf-8');
 			return common.get(req);
 		}).then(function(res) {
 			res.headers.should.have.property('vary', 'Accept');
 			res.headers.should.have.property('content-type', 'application/xml; charset=utf-8');
-			count(req).should.equal(2);
+			count(req).should.equal(4);
 			req.headers.Accept = "application/json";
 			return common.get(req);
 		}).then(function(res) {
 			res.headers.should.have.property('vary', 'Accept');
 			res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
-			count(req).should.equal(2);
+			count(req).should.equal(4);
 		});
 	});
 
