@@ -168,9 +168,9 @@ describe("Vary", function suite() {
 			req.headers.Accept = "application/json";
 			return common.get(req);
 		}).then(function (res) {
-			count(req).should.equal(2);
 			res.headers.should.have.property('vary', 'Accept');
 			res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
+			count(req).should.equal(2);
 			req.headers.Accept = "text/plain";
 			return common.get(req);
 		}).then(function (res) {
@@ -179,9 +179,9 @@ describe("Vary", function suite() {
 			req.headers.Accept = "application/xml";
 			return common.get(req);
 		}).then(function(res) {
-			count(req).should.equal(4);
 			res.headers.should.have.property('vary', 'Accept');
 			res.headers.should.have.property('content-type', 'application/xml; charset=utf-8');
+			count(req).should.equal(4);
 			return common.get(req);
 		}).then(function(res) {
 			res.headers.should.have.property('vary', 'Accept');
