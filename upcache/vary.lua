@@ -9,12 +9,10 @@ local function build_key(key, headers, list)
 	local resVal
 	local reqVal
 	for reqName, map in pairs(list) do
-		reqVal = headers[reqName]
-		if reqVal ~= nil then
-			resVal = map[reqVal]
-			if resVal ~= nil then
-				key = reqName .. '->' .. resVal .. ' ' .. key
-			end
+		reqVal = headers[reqName] or "*"
+		resVal = map[reqVal]
+		if resVal ~= nil then
+			key = reqName .. '->' .. resVal .. ' ' .. key
 		end
 	end
 	return key
@@ -34,10 +32,7 @@ function module.set(key, vars, ngx)
 	if varies == nil then
 		return key
 	end
-	local list = common.get(common.variants, key, 'vary')
-	if list == nil then
-		list = {}
-	end
+	local list = common.get(common.variants, key, 'vary') or {}
 	local ok = false
 	local reqHeaders = ngx.req.get_headers()
 	local resName, resVal, reqName, reqVal
@@ -49,17 +44,16 @@ function module.set(key, vars, ngx)
 		else
 			resName = reqName
 		end
-		reqVal = reqHeaders[reqName]
-		resVal = resHeaders[resName]
-		if resVal ~= nil and reqVal ~= nil then
-			local map = list[reqName]
-			if map == nil then
-				map = {}
-				list[reqName] = map
-			end
-			map[reqVal] = resVal
-			ok = true
+		reqVal = reqHeaders[reqName] or "*"
+		resVal = resHeaders[resName] or "*"
+
+		local map = list[reqName]
+		if map == nil then
+			map = {}
+			list[reqName] = map
 		end
+		map[reqVal] = resVal
+		ok = true
 	end
 	if ok == false then
 		return key
@@ -69,3 +63,4 @@ function module.set(key, vars, ngx)
 end
 
 return module;
+
