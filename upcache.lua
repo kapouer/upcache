@@ -11,6 +11,9 @@ module._VERSION = "1"
 module.jwt = Lock.jwt
 
 function module.request()
+	if module.disabled then
+		return
+	end
 	ngx.req.set_header(common.prefixHeader, module._VERSION)
 	local vars = ngx.var
 	local method = ngx.req.get_method()
