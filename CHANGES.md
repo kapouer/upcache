@@ -35,3 +35,7 @@
 
 - major breaking changes: scopes are now locks and has been simplified a lot.
 
+2.2.0
+=====
+
+- upcache.disabled (the lua module) let lua-ngx code disable upcache
