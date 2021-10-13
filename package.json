@@ -1,6 +1,6 @@
 {
   "name": "upcache",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "description": "nginx proxy cache key protocols implementations",
   "scripts": {
     "test": "mocha",
@@ -30,14 +30,14 @@
   },
   "dependencies": {
     "cookie": "^0.4.1",
-    "dashdash": "^1.14.0",
-    "debug": "^2.6.9",
+    "dashdash": "^2.0.0",
+    "debug": "^4.3.2",
     "express-cache-response-directive": "^1.1.0",
     "jsonwebtoken": "^8.5.1"
   },
   "devDependencies": {
-    "express": "^4.16.2",
-    "mocha": "^4",
-    "should": "^13"
+    "express": "^4.17.1",
+    "mocha": "^9.1.2",
+    "should": "^13.2.3"
   }
 }
