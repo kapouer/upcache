@@ -4,20 +4,19 @@ Tag protocol
 Build proxy cache keys using tags set by application, and let application
 invalidate all url for a given tag at once.
 
-
 Usage
 -----
 
-```
+```js
 var tag = require('tag');
 
-// setup a global app tag, 
+// setup a global app tag,
 
 app.use(tag('app'));
 
 app.post('/protected/purge', tag('app'), function(req, res, next) {
-	// see "scope" for setting up permissions
-	res.sendStatus(200);
+ // see "scope" for setting up permissions
+ res.sendStatus(200);
 });
 
 // per-resource tagging
@@ -41,28 +40,29 @@ app.get('/:domain/list', tag(':domain'), ...);
 
 The last argument of tag() can be a function replacing the default deciding
 when tags must be incremented:
-```
+
+```js
 function incFn(req) {
-	return req.method != "GET";
+ return req.method != "GET";
 }
 ```
 
 Simplified access to cache-control directives is made available through
 `tag.for(...)` or `tag(...).for(...)` method,
 which accepts one argument:
+
 - string or number: a ttl in string format or in seconds
 - object: options for [express-cache-response-directive](https://github.com/dantman/express-cache-response-directive).
 
 A middleware for disabling cache is also available with `tag.disable()`.
 
-```
+```js
 app.get('/api/stats', tag.for('1d'), appMw);
 app.get('/api/user', tag('user-*').for('10min'), appMw);
 app.get('/api/user', tag('user-*').for(3600), appMw);
 
 app.get('/trigger', tag.disable(), ...); // disable cache
 ```
-
 
 Cache protocol
 --------------
@@ -82,18 +82,16 @@ purged - requests keys just need to be changed.
 
 For now only the proxy knows the tags values.
 
-
 Golden rule
 -----------
 
 Never set a max-age on a mutable resource (unless you know it's okay to serve it perempted),
 only set a tag.
 
-
 Sample setup
 ------------
 
-```
+```js
 // application-level tag, changes when application version changes
 app.get('*', tag('app'));
 // static files tag, changes upon application restart
@@ -103,7 +101,8 @@ app.use('/api/*', tag('dynamic'));
 ```
 
 and invalidation of that tag can take place upon application restart:
-```
+
+```js
 app.post('/.upcache', function(req, res, next) {
   if (config.version != config.previousVersion) {
     console.info(`app tag changes because version changes from ${config.previousVersion} to ${config.version}`);

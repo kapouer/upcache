@@ -13,7 +13,7 @@ The mapping applies after other causes of variations.
 Usage
 -----
 
-```
+```js
 const map = require('upcache').map;
 const tag = require('upcache').tag;
 
@@ -30,7 +30,5 @@ app.get('*', tag('app'), function(req, res, next) {
 http response headers
 ---------------------
 
-* X-Upcache-Map  
+* X-Upcache-Map
   contains the path to map the request path to.
-
-
