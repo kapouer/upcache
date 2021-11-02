@@ -36,8 +36,20 @@
     "jsonwebtoken": "^8.5.1"
   },
   "devDependencies": {
+    "@kapouer/eslint-config": "^1.6.1",
     "express": "^4.17.1",
     "mocha": "^9.1.2",
     "should": "^13.2.3"
+  },
+  "eslintConfig": {
+    "extends": "@kapouer/eslint-config",
+    "overrides": [{
+      "files": ["lib/*.js"]
+    }, {
+      "files": ["test/*.js"],
+      "env": {
+        "mocha": true
+      }
+    }]
   }
 }
