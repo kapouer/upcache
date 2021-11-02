@@ -1,6 +1,6 @@
 {
   "name": "upcache",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "nginx proxy cache key protocols implementations",
   "scripts": {
     "test": "mocha",
@@ -43,13 +43,20 @@
   },
   "eslintConfig": {
     "extends": "@kapouer/eslint-config",
-    "overrides": [{
-      "files": ["lib/*.js"]
-    }, {
-      "files": ["test/*.js"],
-      "env": {
-        "mocha": true
+    "overrides": [
+      {
+        "files": [
+          "lib/*.js"
+        ]
+      },
+      {
+        "files": [
+          "test/*.js"
+        ],
+        "env": {
+          "mocha": true
+        }
       }
-    }]
+    ]
   }
 }
