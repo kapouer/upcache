@@ -1,15 +1,14 @@
-var should = require('should');
-var fs = require('fs');
-var Path = require('path');
-var URL = require('url');
-var cookie = require('cookie');
-var express = require('express');
-var assert = require('assert');
+const fs = require('fs');
+const Path = require('path');
+const URL = require('url');
+const cookie = require('cookie');
+const express = require('express');
+const assert = require('assert');
 
-var runner = require('../lib/spawner');
-var common = require('./common');
+const runner = require('../lib/spawner');
+const common = require('./common');
 
-var scope = require('..').lock({
+const scope = require('..').lock({
 	privateKey: fs.readFileSync(Path.join(__dirname, 'fixtures/private.pem')).toString(),
 	publicKey: fs.readFileSync(Path.join(__dirname, 'fixtures/public.pem')).toString(),
 	maxAge: 3600,
@@ -17,21 +16,21 @@ var scope = require('..').lock({
 	userProperty: 'user'
 });
 
-var ports = {
+const ports = {
 	app: 3000,
 	ngx: 3001,
 	memc: 3002
 };
 
-describe("Lock", function suite() {
-	var servers, app;
-	var testPath = '/scope-test';
-	var testPathNotGranted = '/scope-not-granted-test';
-	var testPathWildcardMultiple = '/wildcardmul';
-	var testPathWildcard = '/wildcard';
-	var testPathHeadersSetting = '/headers';
-	var testPathHeadersWithReplacement = '/replacement';
-	var counters = {};
+describe("Lock", () => {
+	let servers, app;
+	const testPath = '/scope-test';
+	const testPathNotGranted = '/scope-not-granted-test';
+	const testPathWildcardMultiple = '/wildcardmul';
+	const testPathWildcard = '/wildcard';
+	const testPathHeadersSetting = '/headers';
+	const testPathHeadersWithReplacement = '/replacement';
+	let counters = {};
 
 	function count(uri, inc) {
 		if (typeof uri != "string") {
@@ -42,22 +41,22 @@ describe("Lock", function suite() {
 				pathname: uri.path
 			}, uri));
 		}
-		var counter = counters[uri];
+		let counter = counters[uri];
 		if (counter == null) counter = counters[uri] = 0;
 		if (inc) counters[uri] += inc;
 		return counters[uri];
 	}
 
-	before(function(done) {
+	before((done) => {
 		servers = runner(ports, done);
 
 		app = express();
 		app.server = app.listen(ports.app);
 
-		app.post('/login', function(req, res, next) {
-			var givemeScope = req.query.scope;
+		app.post('/login', (req, res, next) => {
+			let givemeScope = req.query.scope;
 			if (givemeScope && !Array.isArray(givemeScope)) givemeScope = [givemeScope];
-			var bearer = scope.login(res, {
+			const bearer = scope.login(res, {
 				id: req.query.id || 44,
 				grants: givemeScope || ['bookWriter', 'bookReader']
 			});
@@ -68,12 +67,12 @@ describe("Lock", function suite() {
 			});
 		});
 
-		app.post('/logout', function(req, res, next) {
+		app.post('/logout', (req, res, next) => {
 			scope.logout(res);
 			res.sendStatus(204);
 		});
 
-		app.get(testPathHeadersSetting, scope.init, function(req, res, next) {
+		app.get(testPathHeadersSetting, scope.init, (req, res, next) => {
 			count(req, 1);
 			assert.ok(req.user);
 
@@ -89,7 +88,7 @@ describe("Lock", function suite() {
 			});
 		});
 
-		app.get(testPathHeadersWithReplacement, scope.vary('id-:id'), function(req, res, next) {
+		app.get(testPathHeadersWithReplacement, scope.vary('id-:id'), (req, res, next) => {
 			count(req, 1);
 			assert.ok(req.user);
 			res.send({
@@ -98,7 +97,7 @@ describe("Lock", function suite() {
 			});
 		});
 
-		app.get(testPath, scope.restrict('bookReader', 'bookSecond'), function(req, res, next) {
+		app.get(testPath, scope.restrict('bookReader', 'bookSecond'), (req, res, next) => {
 			req.should.have.property('user');
 			count(req, 1);
 			res.send({
@@ -107,7 +106,7 @@ describe("Lock", function suite() {
 			});
 		});
 
-		app.get(testPathNotGranted, scope.restrict('bookReaderWhat'), function(req, res, next) {
+		app.get(testPathNotGranted, scope.restrict('bookReaderWhat'), (req, res, next) => {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -115,18 +114,18 @@ describe("Lock", function suite() {
 			});
 		});
 
-		app.get(testPathWildcardMultiple, scope.vary('book*'), function(req, res, next) {
+		app.get(testPathWildcardMultiple, scope.vary('book*'), (req, res, next) => {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
 				date: new Date()
 			});
 		});
-		app.post(testPathWildcardMultiple, function(req, res, next) {
+		app.post(testPathWildcardMultiple, (req, res, next) => {
 			res.sendStatus(204);
 		});
 
-		app.get(testPathWildcard, scope.vary('*'), function(req, res, next) {
+		app.get(testPathWildcard, scope.vary('*'), (req, res, next) => {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -134,7 +133,7 @@ describe("Lock", function suite() {
 			});
 		});
 
-		app.get("/user/:id", scope.vary('user-:id'), function(req, res, next) {
+		app.get("/user/:id", scope.vary('user-:id'), (req, res, next) => {
 			if (req.user.id == req.params.id) res.send({id: parseInt(req.params.id)});
 			else res.sendStatus(403);
 		});
@@ -142,29 +141,29 @@ describe("Lock", function suite() {
 		app.use(common.errorHandler);
 	});
 
-	after(function(done) {
+	after((done) => {
 		app.server.close();
 		servers.close(done);
 	});
 
-	beforeEach(function() {
+	beforeEach(() => {
 		counters = {};
 	});
 
-	it("should get 401 when accessing a protected url without proxy", function() {
-		var req = {
+	it("should get 401 when accessing a protected url without proxy", () => {
+		const req = {
 			port: ports.app,
 			path: testPath
 		};
-		return common.get(req).then(function(res) {
+		return common.get(req).then((res) => {
 			res.statusCode.should.equal(401);
 			count(req).should.equal(0);
 		});
 	});
 
-	it("should log in and get read access to a url without proxy", function() {
-		var headers = {};
-		var req = {
+	it("should log in and get read access to a url without proxy", () => {
+		const headers = {};
+		const req = {
 			headers: headers,
 			port: ports.app,
 			path: testPath
@@ -172,20 +171,20 @@ describe("Lock", function suite() {
 		return common.post({
 			port: ports.app,
 			path: '/login'
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('x-upcache-lock', 'bookReader, bookSecond');
 			count(req).should.equal(1);
 		});
 	});
 
-	it("should log in and not get read access to another url without proxy", function() {
-		var headers = {};
-		var req = {
+	it("should log in and not get read access to another url without proxy", () => {
+		const headers = {};
+		const req = {
 			headers: headers,
 			port: ports.app,
 			path: testPathNotGranted
@@ -193,66 +192,66 @@ describe("Lock", function suite() {
 		return common.post({
 			port: ports.app,
 			path: '/login'
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(403);
 			count(req).should.equal(0);
 		});
 	});
 
-	it("should log in, access, then log out, and be denied access without proxy", function() {
-		var headers = {};
+	it("should log in, access, then log out, and be denied access without proxy", () => {
+		const headers = {};
 		return common.post({
 			port: ports.app,
 			path: '/login'
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get({
 				headers: headers,
 				port: ports.app,
 				path: testPath
 			});
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(200);
 			return common.post({
 				headers: headers,
 				port: ports.app,
 				path: "/logout"
 			});
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get({
 				headers: headers,
 				port: ports.app,
 				path: testPath
 			});
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(401);
 		});
 	});
 
-	it("should get 401 when accessing a protected url with proxy", function() {
-		var req = {
+	it("should get 401 when accessing a protected url with proxy", () => {
+		const req = {
 			port: ports.ngx,
 			path: testPath
 		};
-		return common.get(req).then(function(res) {
+		return common.get(req).then((res) => {
 			res.statusCode.should.equal(401);
 			count(req).should.equal(0);
 		});
 	});
 
-	it("should log in and get read access to a url and not hit the cache with proxy", function() {
-		var headers = {};
-		var req = {
+	it("should log in and get read access to a url and not hit the cache with proxy", () => {
+		const headers = {};
+		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testPath
@@ -260,41 +259,41 @@ describe("Lock", function suite() {
 		return common.post({
 			port: ports.ngx,
 			path: '/login'
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.not.have.property('x-upcache-lock-key');
 			res.headers.should.have.property('x-upcache-lock', 'bookReader, bookSecond');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(200);
 			// because it should be a cache hit
 			count(req).should.equal(2);
 		});
 	});
 
-	it("should get headers right with proxy", function() {
-		var headers = {};
-		var req = {
+	it("should get headers right with proxy", () => {
+		const headers = {};
+		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testPathHeadersSetting
 		};
-		return common.get(req).then(function(res) {
+		return common.get(req).then((res) => {
 			res.headers.should.have.property('x-upcache-lock', 'dynA, dynB, dynC, dynD, dynE');
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
 		});
 	});
 
-	it("should log in and not get read access to another url with proxy", function() {
-		var headers = {};
-		var req = {
+	it("should log in and not get read access to another url with proxy", () => {
+		const headers = {};
+		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testPathNotGranted
@@ -302,176 +301,175 @@ describe("Lock", function suite() {
 		return common.post({
 			port: ports.ngx,
 			path: '/login'
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(403);
 			count(req).should.equal(0);
 		});
 	});
 
-	it("should log in, access, then log out, and be denied access with proxy", function() {
-		var headers = {};
+	it("should log in, access, then log out, and be denied access with proxy", () => {
+		const headers = {};
 		return common.post({
 			port: ports.ngx,
 			path: '/login'
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get({
 				headers: headers,
 				port: ports.ngx,
 				path: testPath
 			});
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(200);
 			return common.post({
 				headers: headers,
 				port: ports.ngx,
 				path: "/logout"
 			});
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get({
 				headers: headers,
 				port: ports.ngx,
 				path: testPath
 			});
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(401);
 		});
 	});
 
-	it("should log in with different scopes and cache each variant with proxy", function() {
-		var headers = {};
-		var req = {
+	it("should log in with different scopes and cache each variant with proxy", () => {
+		const headers = {};
+		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testPath
 		};
-		var firstDate;
+		let firstDate;
 		return common.post({
 			port: ports.ngx,
 			path: '/login?scope=bookReader'
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(200);
 			firstDate = res.body.date;
 			return common.post({
 				port: ports.ngx,
 				path: '/login?scope=bookSecond'
 			});
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(200);
 			res.body.date.should.not.equal(firstDate);
 		});
 	});
 
-	it("should log in with different scopes on a wildcard restriction and cache each variant with proxy", function() {
-		var headers = {};
-		var req = {
+	it("should log in with different scopes on a wildcard restriction and cache each variant with proxy", () => {
+		const headers = {};
+		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testPathWildcardMultiple
 		};
-		var firstDate;
+		let firstDate;
 		return common.post({
 			port: ports.ngx,
 			path: '/login?scope=book1&scope=book2'
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(200);
 			firstDate = res.body.date;
 			return common.post({
 				port: ports.ngx,
 				path: '/login?scope=book3&scope=book2'
 			});
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(200);
 			res.body.date.should.not.equal(firstDate);
 		});
 	});
 
-	it("should cache a wildcard-restricted resource without grant then fetch the same with a grant with proxy", function() {
-		var headers = {};
-		var req = {
+	it("should cache a wildcard-restricted resource without grant then fetch the same with a grant with proxy", () => {
+		const headers = {};
+		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testPathWildcard
 		};
-		var firstDate;
-		return common.get(req).then(function(res) {
+		let firstDate;
+		return common.get(req).then((res) => {
 			res.statusCode.should.equal(200);
 			firstDate = res.body.date;
 			return common.post({
 				port: ports.ngx,
 				path: '/login?redirect=' + encodeURIComponent(testPathWildcard),
 			});
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(200);
 			res.body.date.should.not.equal(firstDate);
 		});
 	});
 
-	it("should log in as user and be authorized to read user, then be unauthorized to read another user (without proxy)", function() {
-		var headers = {};
-		var req = {
+	it("should log in as user and be authorized to read user, then be unauthorized to read another user (without proxy)", () => {
+		const headers = {};
+		const req = {
 			headers: headers,
 			port: ports.app,
 			path: '/user/45'
 		};
-		var firstDate;
 		return common.post({
 			port: ports.app,
 			path: '/login?id=45'
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('x-upcache-lock', 'user-:id');
 			res.statusCode.should.equal(200);
 			res.body.id.should.equal(45);
 			req.path += '1';
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(403);
 		});
 	});
 
-	it("should log in as user and be authorized to read user, then be unauthorized to read another user (with proxy)", function() {
-		var headers = {};
-		var req = {
+	it("should log in as user and be authorized to read user, then be unauthorized to read another user (with proxy)", () => {
+		const headers = {};
+		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: '/user/45'
@@ -479,18 +477,18 @@ describe("Lock", function suite() {
 		return common.post({
 			port: ports.ngx,
 			path: '/login?id=45'
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('x-upcache-lock', 'user-:id');
 			res.statusCode.should.equal(200);
 			res.body.id.should.equal(45);
 			req.path += '1';
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(403);
 		});
 	});

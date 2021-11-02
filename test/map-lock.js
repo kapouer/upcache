@@ -1,34 +1,33 @@
-var should = require('should');
-var fs = require('fs');
-var Path = require('path');
-var URL = require('url');
-var cookie = require('cookie');
-var express = require('express');
+const fs = require('fs');
+const Path = require('path');
+const URL = require('url');
+const cookie = require('cookie');
+const express = require('express');
 
-var runner = require('../lib/spawner');
-var common = require('./common');
+const runner = require('../lib/spawner');
+const common = require('./common');
 
-var upcache = require('..');
-var locker = upcache.lock({
+const upcache = require('..');
+const locker = upcache.lock({
 	privateKey: fs.readFileSync(Path.join(__dirname, 'fixtures/private.pem')).toString(),
 	publicKey: fs.readFileSync(Path.join(__dirname, 'fixtures/public.pem')).toString(),
 	maxAge: 3600,
 	issuer: "test",
 	userProperty: "user"
 });
-var map = upcache.map;
+const map = upcache.map;
 
-var ports = {
+const ports = {
 	app: 3000,
 	ngx: 3001,
 	memc: 3002
 };
 
-describe("Map and Lock", function suite() {
-	var servers, app;
-	var testPath = '/dynamic';
-	var testPathMapped = '/mapped';
-	var counters = {};
+describe("Map and Lock", () => {
+	let servers, app;
+	const testPath = '/dynamic';
+	const testPathMapped = '/mapped';
+	let counters = {};
 
 	function count(uri, inc) {
 		if (typeof uri != "string") {
@@ -39,45 +38,45 @@ describe("Map and Lock", function suite() {
 				pathname: uri.path
 			}, uri));
 		}
-		var counter = counters[uri];
+		let counter = counters[uri];
 		if (counter == null) counter = counters[uri] = 0;
 		if (inc) counters[uri] += inc;
 		return counters[uri];
 	}
 
-	before(function(done) {
+	before((done) => {
 		servers = runner(ports, done);
 
 		app = express();
 		app.server = app.listen(ports.app);
 
-		app.post('/login', function(req, res, next) {
-			var givemeScope = req.query.scope;
+		app.post('/login', (req, res, next) => {
+			let givemeScope = req.query.scope;
 			if (givemeScope && !Array.isArray(givemeScope)) givemeScope = [givemeScope];
-			var user = {
+			const user = {
 				id: req.query && req.query.id || 44,
 				grants: givemeScope || ['bookWriter', 'bookReader']
 			};
-			var bearer = locker.login(res, user);
+			const bearer = locker.login(res, user);
 			res.send({
 				user: user,
 				bearer: bearer // convenient but not technically needed
 			});
 		});
 
-		app.post('/logout', function(req, res, next) {
+		app.post('/logout', (req, res, next) => {
 			locker.logout(res);
 			res.sendStatus(204);
 		});
 
-		app.get(testPath, upcache.tag('app'), locker.init, function(req, res, next) {
+		app.get(testPath, upcache.tag('app'), locker.init, (req, res, next) => {
 			count(req, 1);
 
-			var grants = req.user.grants || [];
-			var locks = ['dynA', 'dynB'];
+			const grants = req.user.grants || [];
+			const locks = ['dynA', 'dynB'];
 			locker.headers(res, locks);
 
-			if (!locks.some(function(lock) {
+			if (!locks.some((lock) => {
 				return grants.includes(lock);
 			})) {
 				map(res, testPathMapped);
@@ -95,24 +94,24 @@ describe("Map and Lock", function suite() {
 		app.use(common.errorHandler);
 	});
 
-	after(function(done) {
+	after((done) => {
 		app.server.close();
 		servers.close(done);
 	});
 
-	beforeEach(function() {
+	beforeEach(() => {
 		counters = {};
 	});
 
-	it("should map several unauthorized users to the same cache key with proxy", function() {
-		var headers = {};
-		var req = {
+	it("should map several unauthorized users to the same cache key with proxy", () => {
+		const headers = {};
+		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testPath
 		};
-		var result;
-		return common.get(req).then(function(res) {
+		let result;
+		return common.get(req).then((res) => {
 			res.statusCode.should.equal(403);
 			res.headers.should.have.property('x-upcache-map', testPathMapped);
 			result = res.body;
@@ -123,18 +122,18 @@ describe("Map and Lock", function suite() {
 					scope: 'what'
 				}
 			});
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			delete req.headers.Cookie;
 			res.statusCode.should.equal(403);
 			result.should.deepEqual(res.body);
 			count(req).should.equal(1);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(403);
 			result.should.deepEqual(res.body);
 			res.headers.should.have.property('x-upcache-map', testPathMapped);
@@ -143,18 +142,18 @@ describe("Map and Lock", function suite() {
 				port: ports.ngx,
 				path: '/login?scope=dynA'
 			});
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			count(req).should.equal(2);
 			res.statusCode.should.equal(200);
 			res.body.usergrants.should.deepEqual(['dynA']);
 			res.headers.should.not.have.property('x-upcache-map');
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			count(req).should.equal(2);
 			res.statusCode.should.equal(200);
 			res.body.usergrants.should.deepEqual(['dynA']);

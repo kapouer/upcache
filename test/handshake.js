@@ -1,32 +1,30 @@
-var debug = require('debug')('scope');
-var should = require('should');
-var fs = require('fs');
-var Path = require('path');
-var URL = require('url');
-var cookie = require('cookie');
-var express = require('express');
+const fs = require('fs');
+const Path = require('path');
+const URL = require('url');
+const cookie = require('cookie');
+const express = require('express');
 
-var runner = require('../lib/spawner');
-var common = require('./common');
+const runner = require('../lib/spawner');
+const common = require('./common');
 
-var locker = require('..').lock({
+const locker = require('..').lock({
 	privateKey: fs.readFileSync(Path.join(__dirname, 'fixtures/private.pem')).toString(),
 	publicKey: fs.readFileSync(Path.join(__dirname, 'fixtures/public.pem')).toString(),
 	maxAge: 3600,
 	issuer: "test"
 });
 
-var ports = {
+const ports = {
 	app: 3000,
 	ngx: 3001,
 	memc: 3002
 };
 
-describe("Lock", function suite() {
-	var servers, app;
-	var testPathWildcard = '/wildcard';
-	var testPathWildcardMultiple = '/partialmatches';
-	var counters = {};
+describe("Lock", () => {
+	let servers, app;
+	const testPathWildcard = '/wildcard';
+	const testPathWildcardMultiple = '/partialmatches';
+	let counters = {};
 
 	function count(uri, inc) {
 		if (typeof uri != "string") {
@@ -37,23 +35,23 @@ describe("Lock", function suite() {
 				pathname: uri.path
 			}, uri));
 		}
-		var counter = counters[uri];
+		let counter = counters[uri];
 		if (counter == null) counter = counters[uri] = 0;
 		if (inc) counters[uri] += inc;
 		return counters[uri];
 	}
 
-	beforeEach(function(done) {
+	beforeEach((done) => {
 		counters = {};
 		servers = runner(ports, done);
 
 		app = express();
 		app.server = app.listen(ports.app);
 
-		app.post('/login', function(req, res, next) {
-			var requestedScopes = req.query.scope || [];
+		app.post('/login', (req, res, next) => {
+			let requestedScopes = req.query.scope || [];
 			if (!Array.isArray(requestedScopes)) requestedScopes = [requestedScopes];
-			var bearer = locker.login(res, {
+			const bearer = locker.login(res, {
 				id: 44,
 				grants: requestedScopes
 			});
@@ -64,18 +62,18 @@ describe("Lock", function suite() {
 			});
 		});
 
-		app.get(testPathWildcardMultiple, locker.restrict('book*'), function(req, res, next) {
+		app.get(testPathWildcardMultiple, locker.restrict('book*'), (req, res, next) => {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
 				date: new Date()
 			});
 		});
-		app.post(testPathWildcardMultiple, locker.restrict('auth'), function(req, res, next) {
+		app.post(testPathWildcardMultiple, locker.restrict('auth'), (req, res, next) => {
 			res.sendStatus(204);
 		});
 
-		app.get(testPathWildcard, locker.vary('*'), function(req, res, next) {
+		app.get(testPathWildcard, locker.vary('*'), (req, res, next) => {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -86,21 +84,21 @@ describe("Lock", function suite() {
 		app.use(common.errorHandler);
 	});
 
-	afterEach(function(done) {
+	afterEach((done) => {
 		app.server.close();
 		servers.close(done);
 	});
 
 
-	it("should cache a wildcard-restricted resource without grant then fetch the same with a grant with proxy", function() {
-		var headers = {};
-		var req = {
+	it("should cache a wildcard-restricted resource without grant then fetch the same with a grant with proxy", () => {
+		const headers = {};
+		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testPathWildcard
 		};
-		var firstDate;
-		var fakeRes = {
+		let firstDate;
+		const fakeRes = {
 			req: {
 				hostname: "locahost"
 			},
@@ -114,22 +112,22 @@ describe("Lock", function suite() {
 					auth: true
 				}}))
 			}
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.not.have.property('x-upcache-key-handshake');
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(200);
 			firstDate = res.body.date;
 			return common.post({
 				port: ports.ngx,
 				path: '/login?scope=test'
 			});
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('set-cookie');
-			var cookies = cookie.parse(res.headers['set-cookie'][0]);
+			const cookies = cookie.parse(res.headers['set-cookie'][0]);
 			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(200);
 			res.body.date.should.not.equal(firstDate);
 		});

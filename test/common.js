@@ -1,12 +1,12 @@
-var http = require('http');
-var URL = require('url');
+const http = require('http');
+const URL = require('url');
 
 exports.get = function(uri) {
-	return new Promise(function(resolve, reject) {
+	return new Promise((resolve, reject) => {
 		if (typeof uri == "string") uri = URL.parse(uri);
 		uri = Object.assign({}, uri);
-		http.get(uri, function(res) {
-			var body = "";
+		http.get(uri, (res) => {
+			let body = "";
 			res.setEncoding('utf8');
 			res.on('data', (chunk) => {
 				body += chunk;
@@ -19,19 +19,19 @@ exports.get = function(uri) {
 				}
 				resolve(res);
 			});
-		}).once('error', function(err) {
+		}).once('error', (err) => {
 			reject(err);
 		});
 	});
 };
 
 exports.post = function(uri, data) {
-	return new Promise(function(resolve, reject) {
+	return new Promise((resolve, reject) => {
 		if (typeof uri == "string") uri = URL.parse(uri);
 		uri = Object.assign({}, uri);
 		uri.method = 'POST';
-		var req = http.request(uri, function(res) {
-			var body = "";
+		const req = http.request(uri, (res) => {
+			let body = "";
 			res.setEncoding('utf8');
 			res.on('data', (chunk) => {
 				body += chunk;
@@ -45,12 +45,12 @@ exports.post = function(uri, data) {
 				resolve(res);
 			});
 		});
-		req.once('error', function(err) {
+		req.once('error', (err) => {
 			reject(err);
 		});
 		if (data) req.write(data);
 		req.end();
-	}).catch(function(err) {
+	}).catch((err) => {
 		console.error(err);
 	});
 };

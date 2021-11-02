@@ -1,25 +1,23 @@
-var should = require('should');
-var fs = require('fs');
-var URL = require('url');
-var express = require('express');
+const URL = require('url');
+const express = require('express');
 
-var runner = require('../lib/spawner');
-var common = require('./common');
+const runner = require('../lib/spawner');
+const common = require('./common');
 
-var map = require('..').map;
-var tag = require('..').tag;
+const map = require('..').map;
+const tag = require('..').tag;
 
-var ports = {
+const ports = {
 	app: 3000,
 	ngx: 3001,
 	memc: 3002
 };
 
-describe("Map", function suite() {
-	var servers, app;
-	var testPath = '/map-test';
-	var mappedTestPath = testPath + '-mapped';
-	var counters = {};
+describe("Map", () => {
+	let servers, app;
+	const testPath = '/map-test';
+	const mappedTestPath = testPath + '-mapped';
+	let counters = {};
 
 	function count(uri, inc) {
 		if (typeof uri != "string") {
@@ -30,19 +28,19 @@ describe("Map", function suite() {
 				pathname: uri.path
 			}, uri));
 		}
-		var counter = counters[uri];
+		let counter = counters[uri];
 		if (counter == null) counter = counters[uri] = 0;
 		if (inc) counters[uri] += inc;
 		return counters[uri];
 	}
 
-	before(function(done) {
+	before((done) => {
 		servers = runner(ports, done);
 
 		app = express();
 		app.server = app.listen(ports.app);
 
-		app.get(testPath, tag('app'), function(req, res, next) {
+		app.get(testPath, tag('app'), (req, res, next) => {
 			map(res, mappedTestPath);
 			count(req, 1);
 			res.send({
@@ -52,34 +50,34 @@ describe("Map", function suite() {
 		});
 	});
 
-	after(function(done) {
+	after((done) => {
 		app.server.close();
 		servers.close(done);
 	});
 
-	beforeEach(function() {
+	beforeEach(() => {
 		counters = {};
 	});
 
-	it("should map testPath to mappedTestPath", function() {
-		var req = {
+	it("should map testPath to mappedTestPath", () => {
+		const req = {
 			port: ports.ngx,
 			path: testPath
 		};
-		var reqm = {
+		const reqm = {
 			port: ports.ngx,
 			path: mappedTestPath
 		};
-		var result;
-		return common.get(req).then(function(res) {
+		let result;
+		return common.get(req).then((res) => {
 			result = res.body.toString();
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.body.toString().should.equal(result);
 			count(req).should.equal(1);
 			res.headers.should.have.property('x-upcache-map', mappedTestPath);
 			return common.get(reqm);
-		}).then(function(res) {
+		}).then((res) => {
 			res.body.toString().should.equal(result);
 			count(req).should.equal(1);
 			res.headers.should.have.property('x-upcache-map', mappedTestPath);

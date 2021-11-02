@@ -1,27 +1,24 @@
-var debug = require('debug')('tag');
-var should = require('should');
-var fs = require('fs');
-var URL = require('url');
-var express = require('express');
+const URL = require('url');
+const express = require('express');
 
-var runner = require('../lib/spawner');
-var common = require('./common');
+const runner = require('../lib/spawner');
+const common = require('./common');
 
-var tag = require('..').tag;
+const tag = require('..').tag;
 
-var ports = {
+const ports = {
 	app: 3000,
 	ngx: 3001,
 	memc: 3002
 };
 
-describe("Tag", function suite() {
-	var servers, app;
-	var testPath = '/tag-test';
-	var conditionalPath = "/conditional";
-	var conditionalPathNot = "/conditionalnot";
-	var untaggedPath = '/untagged';
-	var counters = {};
+describe("Tag", () => {
+	let servers, app;
+	const testPath = '/tag-test';
+	const conditionalPath = "/conditional";
+	const conditionalPathNot = "/conditionalnot";
+	const untaggedPath = '/untagged';
+	const counters = {};
 
 	function count(uri, inc) {
 		if (typeof uri != "string") {
@@ -32,19 +29,19 @@ describe("Tag", function suite() {
 				pathname: uri.path
 			}, uri));
 		}
-		var counter = counters[uri];
+		let counter = counters[uri];
 		if (counter == null) counter = counters[uri] = 0;
 		if (inc) counters[uri] += inc;
 		return counters[uri];
 	}
 
-	before(function(done) {
+	before((done) => {
 		servers = runner(ports, done);
 
 		app = express();
 		app.server = app.listen(ports.app);
 
-		app.get('/a', tag('global'), function(req, res, next) {
+		app.get('/a', tag('global'), (req, res, next) => {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -52,7 +49,7 @@ describe("Tag", function suite() {
 			});
 		});
 
-		app.get(testPath, tag('test'), function(req, res, next) {
+		app.get(testPath, tag('test'), (req, res, next) => {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -60,15 +57,15 @@ describe("Tag", function suite() {
 			});
 		});
 
-		app.post(testPath, tag('test'), function(req, res, next) {
+		app.post(testPath, tag('test'), (req, res, next) => {
 			res.send('OK');
 		});
 
-		app.post("/a", tag('test'), function(req, res, next) {
+		app.post("/a", tag('test'), (req, res, next) => {
 			res.send('OK');
 		});
 
-		app.get('/multiple', tag('one'), tag('two'), function(req, res, next) {
+		app.get('/multiple', tag('one'), tag('two'), (req, res, next) => {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -76,11 +73,11 @@ describe("Tag", function suite() {
 			});
 		});
 
-		app.post("/multiple", tag('two'), function(req, res, next) {
+		app.post("/multiple", tag('two'), (req, res, next) => {
 			res.send('OK');
 		});
 
-		app.get(conditionalPath, tag('conditional'), function(req, res, next) {
+		app.get(conditionalPath, tag('conditional'), (req, res, next) => {
 			count(req, 1);
 			res.set('ETag', 'W/"myetag"');
 			res.send({
@@ -89,7 +86,7 @@ describe("Tag", function suite() {
 			});
 		});
 
-		app.get(conditionalPathNot, tag('conditionalnot'), function(req, res, next) {
+		app.get(conditionalPathNot, tag('conditionalnot'), (req, res, next) => {
 			count(req, 1);
 			res.set('ETag', 'W/"myetagnot"');
 			res.send({
@@ -98,7 +95,7 @@ describe("Tag", function suite() {
 			});
 		});
 
-		app.get('/multiplesame', tag('one'), tag('one', 'two'), tag('+one', 'two', 'three'), function(req, res, next) {
+		app.get('/multiplesame', tag('one'), tag('one', 'two'), tag('+one', 'two', 'three'), (req, res, next) => {
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -106,7 +103,7 @@ describe("Tag", function suite() {
 			});
 		});
 
-		app.get(untaggedPath, function(req, res, next) {
+		app.get(untaggedPath, (req, res, next) => {
 			count(req, 1);
 			res.send("ok");
 		});
@@ -114,147 +111,146 @@ describe("Tag", function suite() {
 		app.use(common.errorHandler);
 	});
 
-	after(function(done) {
+	after((done) => {
 		app.server.close();
 		servers.close(done);
 	});
 
-	it("should cache a url", function() {
-		var req = {
+	it("should cache a url", () => {
+		const req = {
 			port: ports.ngx,
 			path: testPath
 		};
-		return common.get(req).then(function(res) {
+		return common.get(req).then((res) => {
 			res.headers.should.have.property('x-upcache-tag', 'test');
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('x-upcache-tag', 'test');
 			count(req).should.equal(1);
 		});
 	});
 
-	it("should invalidate a tag using a post", function() {
-		var firstDate;
-		var req = {
+	it("should invalidate a tag using a post", () => {
+		let firstDate;
+		const req = {
 			port: ports.ngx,
 			path: testPath
 		};
 		return common.get(req)
-		.then(function(res) {
-			firstDate = Date.parse(res.body.date);
-			res.headers.should.have.property('x-upcache-tag', 'test');
-			return common.post(req, 'postbody');
-		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-tag', '+test');
-			return common.get(req);
-		}).then(function(res) {
-			Date.parse(res.body.date).should.be.greaterThan(firstDate);
-		});
+			.then((res) => {
+				firstDate = Date.parse(res.body.date);
+				res.headers.should.have.property('x-upcache-tag', 'test');
+				return common.post(req, 'postbody');
+			}).then((res) => {
+				res.headers.should.have.property('x-upcache-tag', '+test');
+				return common.get(req);
+			}).then((res) => {
+				Date.parse(res.body.date).should.be.greaterThan(firstDate);
+			});
 	});
 
-	it("should invalidate one tag on a route with multiple tags using a post", function() {
-		var firstDate;
-		var req = {
+	it("should invalidate one tag on a route with multiple tags using a post", () => {
+		let firstDate;
+		const req = {
 			port: ports.ngx,
 			path: "/multiple"
 		};
 		return common.get(req)
-		.then(function(res) {
-			firstDate = Date.parse(res.body.date);
-			res.headers.should.have.property('x-upcache-tag', 'one, two');
-			return common.post(req, 'postbody');
-		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-tag', '+two');
-			return common.get(req);
-		}).then(function(res) {
-			Date.parse(res.body.date).should.be.greaterThan(firstDate);
-		});
+			.then((res) => {
+				firstDate = Date.parse(res.body.date);
+				res.headers.should.have.property('x-upcache-tag', 'one, two');
+				return common.post(req, 'postbody');
+			}).then((res) => {
+				res.headers.should.have.property('x-upcache-tag', '+two');
+				return common.get(req);
+			}).then((res) => {
+				Date.parse(res.body.date).should.be.greaterThan(firstDate);
+			});
 	});
 
-	it("should invalidate a tag using a post to a different path", function() {
-		var firstDate;
-		var req = {
+	it("should invalidate a tag using a post to a different path", () => {
+		let firstDate;
+		const req = {
 			port: ports.ngx,
 			path: testPath
 		};
 		return common.get(req)
-		.then(function(res) {
-			firstDate = Date.parse(res.body.date);
-			res.headers.should.have.property('x-upcache-tag', 'test');
-			return common.post({
-				port: ports.ngx,
-				path: "/a"
-			}, 'postbody');
-		}).then(function(res) {
-			res.headers.should.have.property('x-upcache-tag', '+test');
-			return common.get(req);
-		}).then(function(res) {
-			Date.parse(res.body.date).should.be.greaterThan(firstDate);
-		});
+			.then((res) => {
+				firstDate = Date.parse(res.body.date);
+				res.headers.should.have.property('x-upcache-tag', 'test');
+				return common.post({
+					port: ports.ngx,
+					path: "/a"
+				}, 'postbody');
+			}).then((res) => {
+				res.headers.should.have.property('x-upcache-tag', '+test');
+				return common.get(req);
+			}).then((res) => {
+				Date.parse(res.body.date).should.be.greaterThan(firstDate);
+			});
 	});
 
-	it("should handle conditional requests from upstream ETag once cached", function() {
-		var headers = {};
-		var req = {
+	it("should handle conditional requests from upstream ETag once cached", () => {
+		const headers = {};
+		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: conditionalPath
 		};
-		return common.get(req).then(function(res) {
+		return common.get(req).then((res) => {
 			res.headers.should.have.property('etag');
-			var etag = res.headers.etag;
 			headers['If-None-Match'] = res.headers.etag;
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(304);
 			count(req).should.equal(1);
 		});
 	});
 
-	it("should not let conditional requests go to upstream", function() {
-		var headers = {};
-		var req = {
+	it("should not let conditional requests go to upstream", () => {
+		const headers = {};
+		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: conditionalPathNot
 		};
 		headers['If-None-Match'] = 'W/"myetagnot"';
-		return common.get(req).then(function(res) {
+		return common.get(req).then((res) => {
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(304);
 			count(req).should.equal(1);
 		});
 	});
 
-	it("should not cache responses if not tagged by upstream", function() {
-		var headers = {};
-		var req = {
+	it("should not cache responses if not tagged by upstream", () => {
+		const headers = {};
+		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: untaggedPath
 		};
-		return common.get(req).then(function(res) {
+		return common.get(req).then((res) => {
 			res.statusCode.should.equal(200);
 			count(req).should.equal(1);
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.statusCode.should.equal(200);
 			count(req).should.equal(2);
 		});
 	});
 
-	it("should not return multiple identical tags", function() {
-		var req = {
+	it("should not return multiple identical tags", () => {
+		const req = {
 			port: ports.ngx,
 			path: '/multiplesame'
 		};
-		return common.get(req).then(function(res) {
+		return common.get(req).then((res) => {
 			res.headers.should.have.property('x-upcache-tag', '+one, two, three');
 			return common.get(req);
-		}).then(function(res) {
+		}).then((res) => {
 			res.headers.should.have.property('x-upcache-tag', '+one, two, three');
 			count(req).should.equal(1);
 		});
