@@ -1,6 +1,6 @@
 
 luarocks:
-	luarocks --tree=rocks install lua-resty-jwt 0.2.0
+	luarocks --tree=rocks install lua-resty-jwt 0.2.2
 	luarocks --tree=rocks install lua-messagepack 0.5.2
 	curl -L https://github.com/openresty/lua-resty-string/archive/v0.12.tar.gz | \
 		tar -C ./rocks/share/lua/5.1/ -x -v -z -f - \
