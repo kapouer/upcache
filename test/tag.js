@@ -118,6 +118,16 @@ describe("Tag", () => {
 			});
 		});
 
+		app.get("/params2/:test", tag('prev'), (req, res, next) => {
+			if (req.params.test == "none") req.params.test = null;
+			next();
+		}, tag('site-:test').for('1min'), (req, res, next) => {
+			res.send({
+				value: (req.path || '/').substring(1),
+				date: new Date()
+			});
+		});
+
 		app.use(common.errorHandler);
 	});
 
@@ -155,6 +165,22 @@ describe("Tag", () => {
 			res.headers.should.not.have.property('cache-control');
 		});
 	});
+
+	it("should honor req.params tag replacement with a previous tag set", () => {
+		const req = {
+			port: ports.ngx,
+			path: "/params2/me"
+		};
+		return common.get(req).then((res) => {
+			res.headers.should.have.property('x-upcache-tag', 'prev, site-me');
+			res.headers.should.have.property('cache-control', 'public, max-age=60');
+			req.path = "/params2/none";
+			return common.get(req);
+		}).then((res) => {
+			res.headers.should.have.property('x-upcache-tag', 'prev');
+			res.headers.should.not.have.property('cache-control');
+		});
+	}).timeout(0);
 
 	it("should invalidate a tag using a post", () => {
 		let firstDate;
