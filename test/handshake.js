@@ -20,7 +20,7 @@ const ports = {
 	memc: 3002
 };
 
-describe("Lock", () => {
+describe("Handshake", () => {
 	let servers, app;
 	const testPathWildcard = '/wildcard';
 	const testPathWildcardMultiple = '/partialmatches';
