@@ -30,9 +30,17 @@ app.get('/api/other', tag('zone', 'all'), ...);
 // a route can invalidate tags set on other routes
 app.put('/api/sample', tag('all'), ...);
 
-// a tag can depend on the route using req.params replacement
+// a tag can depend on the route using req.locals or req.params replacement
 // no replacement is made if no param is defined.
 app.get('/:domain/list', tag(':domain'), ...);
+
+
+app.use(function(req, res, next) {
+  res.locals.test = "test";
+  next();
+}, tag('has-:test'));
+
+// if the replaced parameter is null, the tag is not added
 
 ```
 
@@ -53,6 +61,8 @@ which accepts one argument:
 
 - string or number: a ttl in string format or in seconds
 - object: options for [express-cache-response-directive](https://github.com/dantman/express-cache-response-directive).
+
+A `for()` call has no effect if the previous `tag()` call actually did not insert a tag.
 
 A middleware for disabling cache is also available with `tag.disable()`.
 
