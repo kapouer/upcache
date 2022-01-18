@@ -150,7 +150,7 @@ describe("Tag", () => {
 			req.path = "/params/none";
 			return common.get(req);
 		}).then((res) => {
-			res.headers.should.not.have.property('x-upcache-tag', 'site-');
+			res.headers.should.not.have.property('x-upcache-tag');
 		});
 	});
 
