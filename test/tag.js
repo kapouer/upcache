@@ -111,7 +111,7 @@ describe("Tag", () => {
 		app.get("/params/:test", (req, res, next) => {
 			if (req.params.test == "none") req.params.test = null;
 			next();
-		}, tag('site-:test'), (req, res, next) => {
+		}, tag('site-:test').for('1min'), (req, res, next) => {
 			res.send({
 				value: (req.path || '/').substring(1),
 				date: new Date()
@@ -147,10 +147,12 @@ describe("Tag", () => {
 		};
 		return common.get(req).then((res) => {
 			res.headers.should.have.property('x-upcache-tag', 'site-me');
+			res.headers.should.have.property('cache-control', 'public, max-age=60');
 			req.path = "/params/none";
 			return common.get(req);
 		}).then((res) => {
 			res.headers.should.not.have.property('x-upcache-tag');
+			res.headers.should.not.have.property('cache-control');
 		});
 	});
 
