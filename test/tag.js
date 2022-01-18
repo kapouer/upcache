@@ -108,6 +108,16 @@ describe("Tag", () => {
 			res.send("ok");
 		});
 
+		app.get("/params/:test", (req, res, next) => {
+			if (req.params.test == "none") req.params.test = null;
+			next();
+		}, tag('site-:test'), (req, res, next) => {
+			res.send({
+				value: (req.path || '/').substring(1),
+				date: new Date()
+			});
+		});
+
 		app.use(common.errorHandler);
 	});
 
@@ -127,6 +137,20 @@ describe("Tag", () => {
 		}).then((res) => {
 			res.headers.should.have.property('x-upcache-tag', 'test');
 			count(req).should.equal(1);
+		});
+	});
+
+	it("should honor req.params tag replacement", () => {
+		const req = {
+			port: ports.ngx,
+			path: "/params/me"
+		};
+		return common.get(req).then((res) => {
+			res.headers.should.have.property('x-upcache-tag', 'site-me');
+			req.path = "/params/none";
+			return common.get(req);
+		}).then((res) => {
+			res.headers.should.not.have.property('x-upcache-tag', 'site-');
 		});
 	});
 
