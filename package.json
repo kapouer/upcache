@@ -6,6 +6,9 @@
     "test": "mocha",
     "rock": "version=$(node -p \"require('./package').version\")-1 && name=$(node -p \"require('./package').name\") && echo \"version = '${version}'\" | cat - package.rockspec > ${name}-${version}.rockspec"
   },
+  "mocha": {
+    "exit": true
+  },
   "repository": {
     "type": "git",
     "url": "git@github.com:kapouer/upcache.git"
