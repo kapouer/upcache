@@ -33,6 +33,20 @@ Content-<Name>: <Value>
 The request Accept-X header value is mapped to the response Content-X header
 value to build the cache key.
 
+
+Vary on Cookie name
+-------------------
+
+```test
+Vary: X-Cookie-<Name>
+X-Cookie-<Name>: <Value>
+```
+
+This is like Accept-`Name` but varies on a virtual X-Cookie-`Name` header,
+which corresponds to the parsed cookie name.
+If a value is defined in the response, the request cookie value is mapped to it.
+
+
 Vary on `HeaderName`
 --------------------
 
@@ -47,8 +61,11 @@ directly to build the cache key.
 However this behavior is really not optimal, especially when dealing with
 User-Agent or other very variable request headers.
 
-Similar to content negotiation, or Client Hints, setting the header value in the
-response will allow a mapping from request value to response value.
+Similar to content negotiation, or Client Hints, the response can tell
+how to map the request header value to another value.
+
+This not only improves cache storage, but cache hits, since the mapping
+itself is kept indefinitely (unless overwritten by another resource).
 
 request:
 

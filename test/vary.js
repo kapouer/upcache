@@ -1,5 +1,6 @@
 const URL = require('url');
 const express = require('express');
+const cookie = require('cookie');
 
 const runner = require('../lib/spawner');
 const common = require('./common');
@@ -15,6 +16,7 @@ const ports = {
 describe("Vary", () => {
 	let servers, app;
 	const testPath = '/vary-test';
+	const testCookie = '/vary-test-cookie';
 	const testNegotiation = '/nego';
 	const testLanguage = "/lang";
 	const testMulti = "/multi";
@@ -48,6 +50,18 @@ describe("Vary", () => {
 			res.send({
 				value: (req.path || '/').substring(1),
 				date: new Date()
+			});
+		});
+
+		app.get(testCookie, tag('app'), (req, res, next) => {
+			const { Prerender } = cookie.parse(req.headers.cookie || "") || {};
+			res.vary('X-Cookie-Prerender');
+			if (Prerender != null) {
+				res.set('X-Cookie-Prerender', Prerender == "on" ? 'true' : 'false');
+			}
+			count(req, 1);
+			res.send({
+				value: Prerender
 			});
 		});
 
@@ -277,6 +291,46 @@ describe("Vary", () => {
 			res.headers.should.have.property('vary', 'Accept-Language, Accept');
 			res.headers.should.have.property('content-language', 'fr');
 			res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
+			count(req).should.equal(3);
+		});
+	});
+
+
+	it("should vary on Cookie Name", () => {
+		const headers = {};
+		const req = {
+			headers: headers,
+			port: ports.ngx,
+			path: testCookie
+		};
+
+		req.headers['Cookie'] = 'IgnoreMe=1; DNT=1; Prerender=on';
+		return common.get(req).then((res) => {
+			res.headers.should.have.property('vary', 'X-Cookie-Prerender');
+			res.headers.should.have.property('x-cookie-prerender', 'true');
+			req.headers['Cookie'] = 'IgnoreMe=1; DNT=1; Prerender=off';
+			return common.get(req);
+		}).then((res) => {
+			count(req).should.equal(2);
+			res.headers.should.have.property('vary', 'X-Cookie-Prerender');
+			res.headers.should.have.property('x-cookie-prerender', 'false');
+			req.headers['Cookie'] = 'IgnoreMe=1; DNT=1; Prerender=on';
+			return common.get(req);
+		}).then((res) => {
+			count(req).should.equal(2);
+			res.headers.should.have.property('vary', 'X-Cookie-Prerender');
+			res.headers.should.have.property('x-cookie-prerender', 'true');
+			req.headers['Cookie'] = 'IgnoreMe=1; DNT=1; Prerender=off';
+			return common.get(req);
+		}).then((res) => {
+			count(req).should.equal(2);
+			res.headers.should.have.property('vary', 'X-Cookie-Prerender');
+			res.headers.should.have.property('x-cookie-prerender', 'false');
+			req.headers['Cookie'] = 'IgnoreMe=1; DNT=1';
+			return common.get(req);
+		}).then((res) => {
+			res.headers.should.have.property('vary', 'X-Cookie-Prerender');
+			res.headers.should.not.have.property('x-cookie-prerender');
 			count(req).should.equal(3);
 		});
 	});

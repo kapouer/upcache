@@ -5,11 +5,15 @@ local module = {}
 
 local varyHeader = "Vary"
 
-local function build_key(key, headers, list)
+local function build_key(key, headers, list, vars)
 	local resVal
 	local reqVal
 	for reqName, map in pairs(list) do
-		reqVal = headers[reqName] or "*"
+		if reqName:sub(1, 9) == "X-Cookie-" then
+			reqVal = vars['cookie_' .. reqName:sub(10)]
+		else
+			reqVal = headers[reqName] or "*"
+		end
 		resVal = map[reqVal]
 		if resVal ~= nil then
 			key = reqName .. '->' .. resVal .. ' ' .. key
@@ -23,7 +27,7 @@ function module.get(key, vars, ngx)
 	if list == nil then
 		return key
 	end
-	return build_key(key, ngx.req.get_headers(), list)
+	return build_key(key, ngx.req.get_headers(), list, vars)
 end
 
 function module.set(key, vars, ngx)
@@ -38,13 +42,19 @@ function module.set(key, vars, ngx)
 	local resName, resVal, reqName, reqVal
 	for i, reqName in ipairs(varies) do
 		if reqName == "Accept" then
+			reqVal = reqHeaders[reqName] or "*"
 			resName = "Content-Type"
 		elseif reqName:sub(1, 7) == "Accept-" then
+			reqVal = reqHeaders[reqName] or "*"
 			resName = "Content-" .. reqName:sub(8)
+		elseif reqName:sub(1, 9) == "X-Cookie-" then
+			reqVal = vars['cookie_' .. reqName:sub(10)] or "*"
+			resName = reqName
 		else
+			reqVal = reqHeaders[reqName] or "*"
 			resName = reqName
 		end
-		reqVal = reqHeaders[reqName] or "*"
+
 		resVal = resHeaders[resName] or "*"
 
 		local map = list[reqName]
@@ -59,7 +69,7 @@ function module.set(key, vars, ngx)
 		return key
 	end
 	common.set(common.variants, key, list, 'vary')
-	return build_key(key, reqHeaders, list)
+	return build_key(key, reqHeaders, list, vars)
 end
 
 return module;
