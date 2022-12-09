@@ -1,10 +1,10 @@
 #!/usr/bin/node
 
-var dash = require('dashdash');
+const dash = require('dashdash');
 
-var spawner = require('../lib/spawner');
+const spawner = require('../lib/spawner');
 
-var parser = dash.createParser({options: [
+const parser = dash.createParser({options: [
 	{
 		names: ['help', 'h'],
 		type: 'bool',
@@ -35,7 +35,7 @@ var parser = dash.createParser({options: [
 	}
 ]});
 
-var opts;
+let opts;
 try {
 	opts = parser.parse(process.argv);
 } catch(e) {
@@ -44,8 +44,8 @@ try {
 }
 
 if (opts.help) {
-	var help = parser.help({includeEnv: true}).trimRight();
-	console.log('usage: node foo.js [OPTIONS]\n' + 'options:\n' + help);
+	const help = parser.help({includeEnv: true}).trimEnd();
+	console.info('usage: node foo.js [OPTIONS]\n' + 'options:\n' + help);
 	process.exit(0);
 }
 
@@ -54,10 +54,10 @@ opts.ngx = 3001;
 if (opts.app != 3000) console.warn("Only app on port 3000 is supported");
 opts.app = 3000;
 
-var servers = spawner(opts, function(err) {
+const servers = spawner(opts, err => {
 	if (err) console.error(err);
-	if (servers.memcached) console.log("Started memcached on port", opts.memc);
-	if (servers.nginx) console.log("Started nginx on port", opts.ngx);
-	console.log("Upstream app expected on port", opts.app);
+	if (servers.memcached) console.info("Started memcached on port", opts.memc);
+	if (servers.nginx) console.info("Started nginx on port", opts.ngx);
+	console.info("Upstream app expected on port", opts.app);
 });
 
