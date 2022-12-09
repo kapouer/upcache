@@ -10,7 +10,7 @@ local function build_key(key, mapped_uri, uri)
 end
 
 function module.get(key, vars, ngx)
-	local nkey = common.get(common.variants, key, 'map')
+	local nkey = common.get(common.variants, key)['map']
 	if nkey == nil then
 		return key
 	else

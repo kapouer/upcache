@@ -23,7 +23,7 @@ local function build_key(key, headers, list, vars)
 end
 
 function module.get(key, vars, ngx)
-	local list = common.get(common.variants, key, 'vary')
+	local list = common.get(common.variants, key)['vary']
 	if list == nil then
 		return key
 	end
@@ -36,7 +36,7 @@ function module.set(key, vars, ngx)
 	if varies == nil then
 		return key
 	end
-	local list = common.get(common.variants, key, 'vary') or {}
+	local list = common.get(common.variants, key)['vary'] or {}
 	local ok = false
 	local reqHeaders = ngx.req.get_headers()
 	local resName, resVal, reqName, reqVal

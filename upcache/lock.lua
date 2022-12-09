@@ -78,7 +78,7 @@ local function build_key(key, locks, token)
 end
 
 local function get_locks(key)
-	return common.get(common.variants, key, 'locks')
+	return common.get(common.variants, key)['locks']
 end
 
 local function update_locks(key, data)

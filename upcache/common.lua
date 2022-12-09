@@ -43,29 +43,18 @@ function module.parseHeader(obj)
 	return list
 end
 
-function module.get(dict, key, what)
+function module.get(dict, key)
 	local pac = ngx.shared[dict]:get(key)
 	if pac == nil then
-		if what == nil then
-			return {}
-		else
-			return nil
-		end
+		return {}
 	end
-	local unpac = mp.unpack(pac)
-	if what ~= nil then
-		unpac = unpac[what]
-	end
-	return unpac
+	return mp.unpack(pac)
 end
 
 function module.set(dict, key, data, what)
 	local vars
 	if what ~= nil then
 		vars = module.get(dict, key)
-		if vars == nil then
-			vars = {}
-		end
 		vars[what] = data
 	else
 		vars = data

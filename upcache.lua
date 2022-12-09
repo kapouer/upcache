@@ -10,6 +10,10 @@ module._VERSION = "1"
 
 module.jwt = Lock.jwt
 
+local function upkey(vars)
+	return (vars.https == "on" and "https" or "http") .. "://" .. vars.host .. vars.request_uri
+end
+
 function module.request()
 	if module.disabled then
 		return
@@ -43,8 +47,8 @@ function module.response()
 		nkey = Vary.set(nkey, vars, ngx)
 		nkey = Map.set(nkey, vars, ngx)
 		nkey = Tag.set(nkey, vars, ngx)
-		if nkey == nil then
-			vars.storeSkip = 1
+		if vars.storeSkip then
+			-- do nothing
 		elseif nkey ~= key then
 			vars.storeKey = ngx.md5(nkey)
 		else
@@ -57,8 +61,6 @@ function module.response()
 	end
 end
 
-function upkey(vars)
-	return (vars.https == "on" and "https" or "http") .. "://" .. vars.host .. vars.request_uri
-end
+
 
 return module

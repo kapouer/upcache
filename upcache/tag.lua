@@ -46,13 +46,14 @@ end
 module.response = response
 
 function module.get(key)
-	return build_key(key, common.get(common.variants, key, 'tags'))
+	return build_key(key, common.get(common.variants, key)['tags'])
 end
 
 function module.set(key, vars, ngx)
 	local tags = response(vars, ngx)
 	if tags == nil then
-		return nil
+		vars.storeSkip = 1
+		return key
 	end
 	table.sort(tags)
 	common.set(common.variants, key, tags, 'tags')
