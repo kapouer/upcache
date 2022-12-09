@@ -52,7 +52,7 @@ end
 function module.set(key, vars, ngx)
 	local tags = response(vars, ngx)
 	if tags == nil then
-		vars.storeSkip = 1
+		vars.storeSkip = '1'
 		return key
 	end
 	table.sort(tags)

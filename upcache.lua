@@ -47,7 +47,7 @@ function module.response()
 		nkey = Vary.set(nkey, vars, ngx)
 		nkey = Map.set(nkey, vars, ngx)
 		nkey = Tag.set(nkey, vars, ngx)
-		if vars.storeSkip then
+		if vars.storeSkip == '1' then
 			-- do nothing
 		elseif nkey ~= key then
 			vars.storeKey = ngx.md5(nkey)
