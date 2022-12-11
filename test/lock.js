@@ -98,7 +98,7 @@ describe("Lock", () => {
 		});
 
 		app.get(testPath, scope.restrict('bookReader', 'bookSecond'), (req, res, next) => {
-			req.should.have.property('user');
+			assert.equal('user' in req, true);
 			count(req, 1);
 			res.send({
 				value: (req.path || '/').substring(1),
@@ -156,8 +156,8 @@ describe("Lock", () => {
 			path: testPath
 		};
 		const res = await common.get(req);
-		res.statusCode.should.equal(401);
-		count(req).should.equal(0);
+		assert.equal(res.statusCode, 401);
+		assert.equal(count(req), 0);
 	});
 
 	it("should log in and get read access to a url without proxy", async () => {
@@ -171,13 +171,13 @@ describe("Lock", () => {
 			port: ports.app,
 			path: '/login'
 		});
-		res.headers.should.have.property('set-cookie');
+		assert.equal('set-cookie' in res.headers, true);
+
 		const cookies = cookie.parse(res.headers['set-cookie'][0]);
 		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 		res = await common.get(req);
-
-		res.headers.should.have.property('x-upcache-lock', 'bookReader, bookSecond');
-		count(req).should.equal(1);
+		assert.equal(res.headers['x-upcache-lock'], 'bookReader, bookSecond');
+		assert.equal(count(req), 1);
 	});
 
 	it("should log in and not get read access to another url without proxy", async () => {

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const Path = require('path');
 const URL = require('url');
+const { strict: assert } = require('assert');
 const cookie = require('cookie');
 const express = require('express');
 
@@ -104,7 +105,9 @@ describe("Handshake", () => {
 			},
 			cookie: function() {}
 		};
-		let res = await common.post({
+		let res;
+
+		res = await common.post({
 			port: ports.ngx,
 			path: testPathWildcardMultiple,
 			headers: {
@@ -115,21 +118,23 @@ describe("Handshake", () => {
 				}))
 			}
 		});
-		res.headers.should.not.have.property('x-upcache-key-handshake');
+		assert.equal('x-upcache-key-handshake' in res.headers, false);
+
 		res = await common.get(req);
-		res.statusCode.should.equal(200);
+		assert.equal(res.statusCode, 200);
+
 		const firstDate = res.body.date;
 		res = await common.post({
 			port: ports.ngx,
 			path: '/login?scope=test'
 		});
+		assert.equal('set-cookie' in res.headers, true);
 
-		res.headers.should.have.property('set-cookie');
 		const cookies = cookie.parse(res.headers['set-cookie'][0]);
 		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 		res = await common.get(req);
 
-		res.statusCode.should.equal(200);
-		res.body.date.should.not.equal(firstDate);
+		assert.equal(res.statusCode, 200);
+		assert.notEqual(res.body.date, firstDate);
 	});
 });
