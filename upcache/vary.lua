@@ -30,7 +30,7 @@ local function build_key(key, headers, list, vars)
 		end
 		resVal = map[reqVal]
 		if resVal ~= nil then
-			key = reqName .. '->' .. resVal .. ' ' .. key
+			key = reqName .. ':' .. resVal .. ' ' .. key
 		end
 	end
 	return key
