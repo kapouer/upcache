@@ -42,3 +42,10 @@ CHANGES
 -----
 
 - upcache.disabled (the lua module) let lua-ngx code disable upcache
+
+2.6.0
+-----
+
+- more es6 javascript
+- fix Vary handling when no response header is set
+- test Vary with Map

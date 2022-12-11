@@ -1,6 +1,7 @@
 const URL = require('url');
 const express = require('express');
 const cookie = require('cookie');
+const { strict: assert } = require('assert');
 
 const runner = require('../lib/spawner');
 const common = require('./common');
@@ -15,6 +16,8 @@ const ports = {
 
 describe("Vary", () => {
 	let servers, app;
+	const testSimple = '/vary-simple';
+	const xAny = 'X-Arbitrary';
 	const testPath = '/vary-test';
 	const testCookie = '/vary-test-cookie';
 	const testNegotiation = '/nego';
@@ -42,6 +45,14 @@ describe("Vary", () => {
 
 		app = express();
 		app.server = app.listen(ports.app);
+
+		app.get(testSimple, tag('app'), (req, res, next) => {
+			res.vary(xAny);
+			count(req, 1);
+			res.send({
+				received: req.get(xAny) ?? null
+			});
+		});
 
 		app.get(testPath, tag('app'), (req, res, next) => {
 			res.vary('User-Agent');
@@ -123,6 +134,48 @@ describe("Vary", () => {
 
 	beforeEach(() => {
 		counters = {};
+	});
+
+	it("should vary on arbitrary request header", async () => {
+		const headers = {};
+		const req = {
+			headers: headers,
+			port: ports.ngx,
+			path: testSimple
+		};
+
+		let res = await common.get(req);
+		assert.deepEqual(res.body, { received: null });
+
+		headers[xAny] = 'one';
+		res = await common.get(req);
+		assert.equal(res.headers.vary, xAny);
+		assert.deepEqual(res.body, { received: 'one' });
+		assert.equal(count(req), 2);
+
+		headers[xAny] = 'two';
+		res = await common.get(req);
+		assert.equal(res.headers.vary, xAny);
+		assert.deepEqual(res.body, { received: 'two' });
+		assert.equal(count(req), 3);
+
+		delete headers[xAny];
+		res = await common.get(req);
+		assert.equal(res.headers.vary, xAny);
+		assert.deepEqual(res.body, { received: null });
+		assert.equal(count(req), 3);
+
+		headers[xAny] = 'one';
+		res = await common.get(req);
+		assert.equal(res.headers.vary, xAny);
+		assert.deepEqual(res.body, { received: 'one' });
+		assert.equal(count(req), 3);
+
+		headers[xAny] = 'two';
+		res = await common.get(req);
+		assert.equal(res.headers.vary, xAny);
+		assert.deepEqual(res.body, { received: 'two' });
+		assert.equal(count(req), 3);
 	});
 
 	it("should vary upon two groups of user-agent", async () => {

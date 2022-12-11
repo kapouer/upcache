@@ -33,7 +33,6 @@ Content-<Name>: <Value>
 The request Accept-X header value is mapped to the response Content-X header
 value to build the cache key.
 
-
 Vary on Cookie name
 -------------------
 
@@ -45,7 +44,6 @@ X-Cookie-<Name>: <Value>
 This is like Accept-`Name` but varies on a virtual X-Cookie-`Name` header,
 which corresponds to the parsed cookie name.
 If a value is defined in the response, the request cookie value is mapped to it.
-
 
 Vary on `HeaderName`
 --------------------
@@ -79,6 +77,9 @@ response:
 Vary: User-Agent
 User-Agent: chrome/73.0.0
 ```
+
+This induces a `User-Agent` mapping, from
+`Mozilla/5.0 AppleWebKit/537.36 Chrome/73.0.3683.75 Safari/537.36` to `chrome/73.0.0`.
 
 Usage
 -----
