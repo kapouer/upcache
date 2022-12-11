@@ -1,58 +1,57 @@
 const http = require('http');
 const URL = require('url');
+const { Deferred } = require('class-deferred');
 
-exports.get = function(uri) {
-	return new Promise((resolve, reject) => {
-		if (typeof uri == "string") uri = URL.parse(uri);
-		uri = Object.assign({}, uri);
-		http.get(uri, (res) => {
-			let body = "";
-			res.setEncoding('utf8');
-			res.on('data', (chunk) => {
-				body += chunk;
-			});
-			res.on('end', () => {
-				try {
-					res.body = JSON.parse(body);
-				} catch(ex) {
-					res.body = body;
-				}
-				resolve(res);
-			});
-		}).once('error', (err) => {
-			reject(err);
+exports.get = function (uri) {
+	const defer = new Deferred();
+	if (typeof uri == "string") uri = URL.parse(uri);
+	uri = Object.assign({}, uri);
+	http.get(uri, (res) => {
+		let body = "";
+		res.setEncoding('utf8');
+		res.on('data', (chunk) => {
+			body += chunk;
 		});
+		res.on('end', () => {
+			try {
+				res.body = JSON.parse(body);
+			} catch(ex) {
+				res.body = body;
+			}
+			defer.resolve(res);
+		});
+	}).once('error', (err) => {
+		defer.reject(err);
 	});
+	return defer;
 };
 
 exports.post = function(uri, data) {
-	return new Promise((resolve, reject) => {
-		if (typeof uri == "string") uri = URL.parse(uri);
-		uri = Object.assign({}, uri);
-		uri.method = 'POST';
-		const req = http.request(uri, (res) => {
-			let body = "";
-			res.setEncoding('utf8');
-			res.on('data', (chunk) => {
-				body += chunk;
-			});
-			res.on('end', () => {
-				try {
-					res.body = JSON.parse(body);
-				} catch(ex) {
-					res.body = body;
-				}
-				resolve(res);
-			});
+	const defer = new Deferred();
+	if (typeof uri == "string") uri = URL.parse(uri);
+	uri = Object.assign({}, uri);
+	uri.method = 'POST';
+	const req = http.request(uri, (res) => {
+		let body = "";
+		res.setEncoding('utf8');
+		res.on('data', (chunk) => {
+			body += chunk;
 		});
-		req.once('error', (err) => {
-			reject(err);
+		res.on('end', () => {
+			try {
+				res.body = JSON.parse(body);
+			} catch(ex) {
+				res.body = body;
+			}
+			defer.resolve(res);
 		});
-		if (data) req.write(data);
-		req.end();
-	}).catch((err) => {
-		console.error(err);
 	});
+	req.once('error', (err) => {
+		defer.reject(err);
+	});
+	if (data) req.write(data);
+	req.end();
+	return defer;
 };
 
 exports.errorHandler = function(err, req, res, next) {
