@@ -53,7 +53,7 @@ function module.set(key, vars, ngx)
 	local list = common.get(common.variants, key)['vary'] or {}
 	local ok = false
 	local reqHeaders = ngx.req.get_headers()
-	local resName, resVal, reqName, reqVal
+	local resName, resVal, reqVal
 	for i, reqName in ipairs(varies) do
 		if reqName == "Accept" then
 			reqVal = reqHeaders[reqName] or "*"
