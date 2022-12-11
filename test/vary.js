@@ -37,8 +37,8 @@ describe("Vary", () => {
 		return counters[uri];
 	}
 
-	before((done) => {
-		servers = runner(ports, done);
+	before(async () => {
+		servers = await runner(ports);
 
 		app = express();
 		app.server = app.listen(ports.app);
@@ -95,7 +95,8 @@ describe("Vary", () => {
 		});
 
 		app.get(testMulti, tag('app'), (req, res, next) => {
-			res.vary('Accept-Language').vary('Accept');
+			res.vary('Accept-Language');
+			res.append('Vary', 'Accept');
 			count(req, 1);
 			const langs = ['en', 'fr'];
 			let str = "Bad";
@@ -115,16 +116,16 @@ describe("Vary", () => {
 		});
 	});
 
-	after((done) => {
+	after(async () => {
 		app.server.close();
-		servers.close(done);
+		await servers.close();
 	});
 
 	beforeEach(() => {
 		counters = {};
 	});
 
-	it("should vary upon two groups of user-agent", () => {
+	it("should vary upon two groups of user-agent", async () => {
 		const agent1 = 'Mozilla/5.0 (Android 4.4; Mobile; rv:41.0) Gecko/41.0 Firefox/41.0';
 		const agent2 = 'Mozilla/5.0 (Android 4.4; Mobile; rv:41.0) Gecko/41.0 Firefox/42.0';
 		const agent3 = 'Mozilla/5.0';
@@ -136,78 +137,76 @@ describe("Vary", () => {
 			port: ports.ngx,
 			path: testPath
 		};
-		return common.get(req).then(() => {
-			headers['User-Agent'] = agent2;
-			return common.get(req);
-		}).then((res) => {
-			count(req).should.equal(2);
-			res.headers.should.have.property('vary', 'Accept-Encoding, User-Agent');
-			res.headers.should.have.property('user-agent', '1');
-			headers['User-Agent'] = agent1;
-			return common.get(req);
-		}).then((res) => {
-			count(req).should.equal(2);
-			res.headers.should.have.property('vary', 'Accept-Encoding, User-Agent');
-			res.headers.should.have.property('user-agent', '1');
-			headers['User-Agent'] = agent2;
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('vary', 'Accept-Encoding, User-Agent');
-			res.headers.should.have.property('user-agent', '1');
-			count(req).should.equal(2);
-			headers['User-Agent'] = agent3;
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('vary', 'Accept-Encoding, User-Agent');
-			res.headers.should.have.property('user-agent', '2');
-			count(req).should.equal(3);
-		});
+		let res = await common.get(req);
+		headers['User-Agent'] = agent2;
+		res = await common.get(req);
+
+		count(req).should.equal(2);
+		res.headers.should.have.property('vary', 'Accept-Encoding, User-Agent');
+		res.headers.should.have.property('user-agent', '1');
+		headers['User-Agent'] = agent1;
+		res = await common.get(req);
+
+		count(req).should.equal(2);
+		res.headers.should.have.property('vary', 'Accept-Encoding, User-Agent');
+		res.headers.should.have.property('user-agent', '1');
+		headers['User-Agent'] = agent2;
+		res = await common.get(req);
+
+		res.headers.should.have.property('vary', 'Accept-Encoding, User-Agent');
+		res.headers.should.have.property('user-agent', '1');
+		count(req).should.equal(2);
+		headers['User-Agent'] = agent3;
+		res = await common.get(req);
+
+		res.headers.should.have.property('vary', 'Accept-Encoding, User-Agent');
+		res.headers.should.have.property('user-agent', '2');
+		count(req).should.equal(3);
 	});
 
-	it("should vary upon Accept, Content-Type", () => {
+	it("should vary upon Accept, Content-Type", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testNegotiation
 		};
-		return common.get(req).then((res) => {
-			count(req).should.equal(1);
-			return common.get(req);
-		}).then(() => {
-			count(req).should.equal(1);
-			req.headers.Accept = "application/json";
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('vary', 'Accept');
-			res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
-			count(req).should.equal(2);
-			req.headers.Accept = "text/plain";
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(406);
-			count(req).should.equal(3);
-			req.headers.Accept = "application/xml";
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('vary', 'Accept');
-			res.headers.should.have.property('content-type', 'application/xml; charset=utf-8');
-			count(req).should.equal(4);
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('vary', 'Accept');
-			res.headers.should.have.property('content-type', 'application/xml; charset=utf-8');
-			count(req).should.equal(4);
-			req.headers.Accept = "application/json";
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('vary', 'Accept');
-			res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
-			count(req).should.equal(4);
-		});
+		let res = await common.get(req);
+		count(req).should.equal(1);
+		res = await common.get(req);
+
+		count(req).should.equal(1);
+		req.headers.Accept = "application/json";
+		res = await common.get(req);
+
+		res.headers.should.have.property('vary', 'Accept');
+		res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
+		count(req).should.equal(2);
+		req.headers.Accept = "text/plain";
+		res = await common.get(req);
+
+		res.statusCode.should.equal(406);
+		count(req).should.equal(3);
+		req.headers.Accept = "application/xml";
+		res = await common.get(req);
+
+		res.headers.should.have.property('vary', 'Accept');
+		res.headers.should.have.property('content-type', 'application/xml; charset=utf-8');
+		count(req).should.equal(4);
+		res = await common.get(req);
+
+		res.headers.should.have.property('vary', 'Accept');
+		res.headers.should.have.property('content-type', 'application/xml; charset=utf-8');
+		count(req).should.equal(4);
+		req.headers.Accept = "application/json";
+		res = await common.get(req);
+
+		res.headers.should.have.property('vary', 'Accept');
+		res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
+		count(req).should.equal(4);
 	});
 
-	it("should vary upon Accept-Language, Content-Language", () => {
+	it("should vary upon Accept-Language, Content-Language", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
@@ -217,37 +216,36 @@ describe("Vary", () => {
 		const english = "fr;q=0.8, en, pt";
 		const french = "fr;q=0.8, en;q=0.7, pt;q=0.5";
 		req.headers['Accept-Language'] = english;
-		return common.get(req).then((res) => {
-			res.headers.should.have.property('vary', 'Accept-Language');
-			res.headers.should.have.property('content-language', 'en');
-			req.headers['Accept-Language'] = french;
-			return common.get(req);
-		}).then((res) => {
-			count(req).should.equal(2);
-			res.headers.should.have.property('vary', 'Accept-Language');
-			res.headers.should.have.property('content-language', 'fr');
-			req.headers['Accept-Language'] = english;
-			return common.get(req);
-		}).then((res) => {
-			count(req).should.equal(2);
-			res.headers.should.have.property('vary', 'Accept-Language');
-			res.headers.should.have.property('content-language', 'en');
-			req.headers['Accept-Language'] = french;
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('vary', 'Accept-Language');
-			res.headers.should.have.property('content-language', 'fr');
-			count(req).should.equal(2);
-			req.headers['Accept-Language'] = "fr;q=0.8, en;q=0.9"; // another english
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('vary', 'Accept-Language');
-			res.headers.should.have.property('content-language', 'en');
-			count(req).should.equal(3);
-		});
+		let res = await common.get(req);
+		res.headers.should.have.property('vary', 'Accept-Language');
+		res.headers.should.have.property('content-language', 'en');
+		req.headers['Accept-Language'] = french;
+		res = await common.get(req);
+
+		count(req).should.equal(2);
+		res.headers.should.have.property('vary', 'Accept-Language');
+		res.headers.should.have.property('content-language', 'fr');
+		req.headers['Accept-Language'] = english;
+		res = await common.get(req);
+
+		count(req).should.equal(2);
+		res.headers.should.have.property('vary', 'Accept-Language');
+		res.headers.should.have.property('content-language', 'en');
+		req.headers['Accept-Language'] = french;
+		res = await common.get(req);
+
+		res.headers.should.have.property('vary', 'Accept-Language');
+		res.headers.should.have.property('content-language', 'fr');
+		count(req).should.equal(2);
+		req.headers['Accept-Language'] = "fr;q=0.8, en;q=0.9"; // another english
+		res = await common.get(req);
+
+		res.headers.should.have.property('vary', 'Accept-Language');
+		res.headers.should.have.property('content-language', 'en');
+		count(req).should.equal(3);
 	});
 
-	it("should vary upon Accept-Language and Accept", () => {
+	it("should vary upon Accept-Language and Accept", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
@@ -259,44 +257,43 @@ describe("Vary", () => {
 		req.headers['Accept-Language'] = english;
 		req.headers.Accept = "application/json";
 
-		return common.get(req).then((res) => {
-			res.headers.should.have.property('vary', 'Accept-Language, Accept');
-			res.headers.should.have.property('content-language', 'en');
-			res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
-			req.headers['Accept-Language'] = french;
-			return common.get(req);
-		}).then((res) => {
-			count(req).should.equal(2);
-			res.headers.should.have.property('vary', 'Accept-Language, Accept');
-			res.headers.should.have.property('content-language', 'fr');
-			res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
-			req.headers['Accept-Language'] = english;
-			return common.get(req);
-		}).then((res) => {
-			count(req).should.equal(2);
-			res.headers.should.have.property('vary', 'Accept-Language, Accept');
-			res.headers.should.have.property('content-language', 'en');
-			res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
-			req.headers.Accept = "application/xml";
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('vary', 'Accept-Language, Accept');
-			res.headers.should.have.property('content-language', 'en');
-			res.headers.should.have.property('content-type', 'application/xml; charset=utf-8');
-			count(req).should.equal(3);
-			req.headers['Accept-Language'] = french;
-			req.headers.Accept = "application/json";
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('vary', 'Accept-Language, Accept');
-			res.headers.should.have.property('content-language', 'fr');
-			res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
-			count(req).should.equal(3);
-		});
+		let res = await common.get(req);
+		res.headers.should.have.property('vary', 'Accept-Language, Accept');
+		res.headers.should.have.property('content-language', 'en');
+		res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
+		req.headers['Accept-Language'] = french;
+		res = await common.get(req);
+
+		count(req).should.equal(2);
+		res.headers.should.have.property('vary', 'Accept-Language, Accept');
+		res.headers.should.have.property('content-language', 'fr');
+		res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
+		req.headers['Accept-Language'] = english;
+		res = await common.get(req);
+
+		count(req).should.equal(2);
+		res.headers.should.have.property('vary', 'Accept-Language, Accept');
+		res.headers.should.have.property('content-language', 'en');
+		res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
+		req.headers.Accept = "application/xml";
+		res = await common.get(req);
+
+		res.headers.should.have.property('vary', 'Accept-Language, Accept');
+		res.headers.should.have.property('content-language', 'en');
+		res.headers.should.have.property('content-type', 'application/xml; charset=utf-8');
+		count(req).should.equal(3);
+		req.headers['Accept-Language'] = french;
+		req.headers.Accept = "application/json";
+		res = await common.get(req);
+
+		res.headers.should.have.property('vary', 'Accept-Language, Accept');
+		res.headers.should.have.property('content-language', 'fr');
+		res.headers.should.have.property('content-type', 'application/json; charset=utf-8');
+		count(req).should.equal(3);
 	});
 
 
-	it("should vary on Cookie Name", () => {
+	it("should vary on Cookie Name", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
@@ -305,33 +302,32 @@ describe("Vary", () => {
 		};
 
 		req.headers['Cookie'] = 'IgnoreMe=1; DNT=1; Prerender=on';
-		return common.get(req).then((res) => {
-			res.headers.should.have.property('vary', 'X-Cookie-Prerender');
-			res.headers.should.have.property('x-cookie-prerender', 'true');
-			req.headers['Cookie'] = 'IgnoreMe=1; DNT=1; Prerender=off';
-			return common.get(req);
-		}).then((res) => {
-			count(req).should.equal(2);
-			res.headers.should.have.property('vary', 'X-Cookie-Prerender');
-			res.headers.should.have.property('x-cookie-prerender', 'false');
-			req.headers['Cookie'] = 'IgnoreMe=1; DNT=1; Prerender=on';
-			return common.get(req);
-		}).then((res) => {
-			count(req).should.equal(2);
-			res.headers.should.have.property('vary', 'X-Cookie-Prerender');
-			res.headers.should.have.property('x-cookie-prerender', 'true');
-			req.headers['Cookie'] = 'IgnoreMe=1; DNT=1; Prerender=off';
-			return common.get(req);
-		}).then((res) => {
-			count(req).should.equal(2);
-			res.headers.should.have.property('vary', 'X-Cookie-Prerender');
-			res.headers.should.have.property('x-cookie-prerender', 'false');
-			req.headers['Cookie'] = 'IgnoreMe=1; DNT=1';
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('vary', 'X-Cookie-Prerender');
-			res.headers.should.not.have.property('x-cookie-prerender');
-			count(req).should.equal(3);
-		});
+		let res = await common.get(req);
+		res.headers.should.have.property('vary', 'X-Cookie-Prerender');
+		res.headers.should.have.property('x-cookie-prerender', 'true');
+		req.headers['Cookie'] = 'IgnoreMe=1; DNT=1; Prerender=off';
+		res = await common.get(req);
+
+		count(req).should.equal(2);
+		res.headers.should.have.property('vary', 'X-Cookie-Prerender');
+		res.headers.should.have.property('x-cookie-prerender', 'false');
+		req.headers['Cookie'] = 'IgnoreMe=1; DNT=1; Prerender=on';
+		res = await common.get(req);
+
+		count(req).should.equal(2);
+		res.headers.should.have.property('vary', 'X-Cookie-Prerender');
+		res.headers.should.have.property('x-cookie-prerender', 'true');
+		req.headers['Cookie'] = 'IgnoreMe=1; DNT=1; Prerender=off';
+		res = await common.get(req);
+
+		count(req).should.equal(2);
+		res.headers.should.have.property('vary', 'X-Cookie-Prerender');
+		res.headers.should.have.property('x-cookie-prerender', 'false');
+		req.headers['Cookie'] = 'IgnoreMe=1; DNT=1';
+		res = await common.get(req);
+
+		res.headers.should.have.property('vary', 'X-Cookie-Prerender');
+		res.headers.should.not.have.property('x-cookie-prerender');
+		count(req).should.equal(3);
 	});
 });

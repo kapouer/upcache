@@ -54,10 +54,11 @@ opts.ngx = 3001;
 if (opts.app != 3000) console.warn("Only app on port 3000 is supported");
 opts.app = 3000;
 
-const servers = spawner(opts, err => {
-	if (err) console.error(err);
+spawner(opts).then(servers => {
 	if (servers.memcached) console.info("Started memcached on port", opts.memc);
 	if (servers.nginx) console.info("Started nginx on port", opts.ngx);
 	console.info("Upstream app expected on port", opts.app);
+}).catch(err => {
+	console.error(err);
 });
 

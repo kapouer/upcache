@@ -34,8 +34,8 @@ describe("Map", () => {
 		return counters[uri];
 	}
 
-	before((done) => {
-		servers = runner(ports, done);
+	before(async () => {
+		servers = await runner(ports);
 
 		app = express();
 		app.server = app.listen(ports.app);
@@ -50,16 +50,16 @@ describe("Map", () => {
 		});
 	});
 
-	after((done) => {
+	after(async () => {
 		app.server.close();
-		servers.close(done);
+		await servers.close();
 	});
 
 	beforeEach(() => {
 		counters = {};
 	});
 
-	it("should map testPath to mappedTestPath", () => {
+	it("should map testPath to mappedTestPath", async () => {
 		const req = {
 			port: ports.ngx,
 			path: testPath
@@ -68,19 +68,15 @@ describe("Map", () => {
 			port: ports.ngx,
 			path: mappedTestPath
 		};
-		let result;
-		return common.get(req).then((res) => {
-			result = res.body.toString();
-			return common.get(req);
-		}).then((res) => {
-			res.body.toString().should.equal(result);
-			count(req).should.equal(1);
-			res.headers.should.have.property('x-upcache-map', mappedTestPath);
-			return common.get(reqm);
-		}).then((res) => {
-			res.body.toString().should.equal(result);
-			count(req).should.equal(1);
-			res.headers.should.have.property('x-upcache-map', mappedTestPath);
-		});
+		let res = await common.get(req);
+		const result = res.body.toString();
+		res = await common.get(req);
+		res.body.toString().should.equal(result);
+		count(req).should.equal(1);
+		res.headers.should.have.property('x-upcache-map', mappedTestPath);
+		res = await common.get(reqm);
+		res.body.toString().should.equal(result);
+		count(req).should.equal(1);
+		res.headers.should.have.property('x-upcache-map', mappedTestPath);
 	});
 });

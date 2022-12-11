@@ -17,13 +17,14 @@ Usage
 const map = require('upcache').map;
 const tag = require('upcache').tag;
 
-app.get('*', tag('app'), function(req, res, next) {
-  decideContent(req.path).then(function(html) {
+app.get('*', tag('app'), async (req, res, next) => {
+  try {
+    const html = await decideContent(req.path);
     res.send(html);
-  }).catch(function(err) {
+  } catch(err) {
     map(res, '/.well-known/404');
     res.send(htmlNotFound);
-  });
+  }
 });
 ```
 

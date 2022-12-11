@@ -35,8 +35,8 @@ describe("Tag", () => {
 		return counters[uri];
 	}
 
-	before((done) => {
-		servers = runner(ports, done);
+	before(async () => {
+		servers = await runner(ports);
 
 		app = express();
 		app.server = app.listen(ports.app);
@@ -131,135 +131,120 @@ describe("Tag", () => {
 		app.use(common.errorHandler);
 	});
 
-	after((done) => {
+	after(async () => {
 		app.server.close();
-		servers.close(done);
+		await servers.close();
 	});
 
-	it("should cache a url", () => {
+	it("should cache a url", async () => {
 		const req = {
 			port: ports.ngx,
 			path: testPath
 		};
-		return common.get(req).then((res) => {
-			res.headers.should.have.property('x-upcache-tag', 'test');
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('x-upcache-tag', 'test');
-			count(req).should.equal(1);
-		});
+		let res = await common.get(req);
+		res.headers.should.have.property('x-upcache-tag', 'test');
+		res = await common.get(req);
+		res.headers.should.have.property('x-upcache-tag', 'test');
+		count(req).should.equal(1);
 	});
 
-	it("should honor req.params tag replacement", () => {
+	it("should honor req.params tag replacement", async () => {
 		const req = {
 			port: ports.ngx,
 			path: "/params/me"
 		};
-		return common.get(req).then((res) => {
-			res.headers.should.have.property('x-upcache-tag', 'site-me');
-			res.headers.should.have.property('cache-control', 'public, max-age=60');
-			req.path = "/params/none";
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.not.have.property('x-upcache-tag');
-			res.headers.should.not.have.property('cache-control');
-		});
+		let res = await common.get(req);
+		res.headers.should.have.property('x-upcache-tag', 'site-me');
+		res.headers.should.have.property('cache-control', 'public, max-age=60');
+		req.path = "/params/none";
+		res = await common.get(req);
+
+		res.headers.should.not.have.property('x-upcache-tag');
+		res.headers.should.not.have.property('cache-control');
 	});
 
-	it("should honor req.params tag replacement with a previous tag set", () => {
+	it("should honor req.params tag replacement with a previous tag set", async () => {
 		const req = {
 			port: ports.ngx,
 			path: "/params2/me"
 		};
-		return common.get(req).then((res) => {
-			res.headers.should.have.property('x-upcache-tag', 'prev, site-me');
-			res.headers.should.have.property('cache-control', 'public, max-age=60');
-			req.path = "/params2/none";
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('x-upcache-tag', 'prev');
-			res.headers.should.not.have.property('cache-control');
-		});
+		let res = await common.get(req);
+		res.headers.should.have.property('x-upcache-tag', 'prev, site-me');
+		res.headers.should.have.property('cache-control', 'public, max-age=60');
+		req.path = "/params2/none";
+		res = await common.get(req);
+
+		res.headers.should.have.property('x-upcache-tag', 'prev');
+		res.headers.should.not.have.property('cache-control');
 	}).timeout(0);
 
-	it("should invalidate a tag using a post", () => {
-		let firstDate;
+	it("should invalidate a tag using a post", async () => {
 		const req = {
 			port: ports.ngx,
 			path: testPath
 		};
-		return common.get(req)
-			.then((res) => {
-				firstDate = Date.parse(res.body.date);
-				res.headers.should.have.property('x-upcache-tag', 'test');
-				return common.post(req, 'postbody');
-			}).then((res) => {
-				res.headers.should.have.property('x-upcache-tag', '+test');
-				return common.get(req);
-			}).then((res) => {
-				Date.parse(res.body.date).should.be.greaterThan(firstDate);
-			});
+		let res = await common.get(req);
+
+		const firstDate = Date.parse(res.body.date);
+		res.headers.should.have.property('x-upcache-tag', 'test');
+		res = await common.post(req, 'postbody');
+		res.headers.should.have.property('x-upcache-tag', '+test');
+		res = await common.get(req);
+		Date.parse(res.body.date).should.be.greaterThan(firstDate);
 	});
 
-	it("should invalidate one tag on a route with multiple tags using a post", () => {
-		let firstDate;
+	it("should invalidate one tag on a route with multiple tags using a post", async () => {
 		const req = {
 			port: ports.ngx,
 			path: "/multiple"
 		};
-		return common.get(req)
-			.then((res) => {
-				firstDate = Date.parse(res.body.date);
-				res.headers.should.have.property('x-upcache-tag', 'one, two');
-				return common.post(req, 'postbody');
-			}).then((res) => {
-				res.headers.should.have.property('x-upcache-tag', '+two');
-				return common.get(req);
-			}).then((res) => {
-				Date.parse(res.body.date).should.be.greaterThan(firstDate);
-			});
+		let res = await common.get(req);
+
+		const firstDate = Date.parse(res.body.date);
+		res.headers.should.have.property('x-upcache-tag', 'one, two');
+		res = await common.post(req, 'postbody');
+
+		res.headers.should.have.property('x-upcache-tag', '+two');
+		res = await common.get(req);
+
+		Date.parse(res.body.date).should.be.greaterThan(firstDate);
 	});
 
-	it("should invalidate a tag using a post to a different path", () => {
-		let firstDate;
+	it("should invalidate a tag using a post to a different path", async () => {
 		const req = {
 			port: ports.ngx,
 			path: testPath
 		};
-		return common.get(req)
-			.then((res) => {
-				firstDate = Date.parse(res.body.date);
-				res.headers.should.have.property('x-upcache-tag', 'test');
-				return common.post({
-					port: ports.ngx,
-					path: "/a"
-				}, 'postbody');
-			}).then((res) => {
-				res.headers.should.have.property('x-upcache-tag', '+test');
-				return common.get(req);
-			}).then((res) => {
-				Date.parse(res.body.date).should.be.greaterThan(firstDate);
-			});
+		let res = await common.get(req);
+		const firstDate = Date.parse(res.body.date);
+		res.headers.should.have.property('x-upcache-tag', 'test');
+		res = await common.post({
+			port: ports.ngx,
+			path: "/a"
+		}, 'postbody');
+
+		res.headers.should.have.property('x-upcache-tag', '+test');
+		res = await common.get(req);
+		Date.parse(res.body.date).should.be.greaterThan(firstDate);
 	});
 
-	it("should handle conditional requests from upstream ETag once cached", () => {
+	it("should handle conditional requests from upstream ETag once cached", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: conditionalPath
 		};
-		return common.get(req).then((res) => {
-			res.headers.should.have.property('etag');
-			headers['If-None-Match'] = res.headers.etag;
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(304);
-			count(req).should.equal(1);
-		});
+		let res = await common.get(req);
+		res.headers.should.have.property('etag');
+		headers['If-None-Match'] = res.headers.etag;
+		res = await common.get(req);
+
+		res.statusCode.should.equal(304);
+		count(req).should.equal(1);
 	});
 
-	it("should not let conditional requests go to upstream", () => {
+	it("should not let conditional requests go to upstream", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
@@ -267,44 +252,39 @@ describe("Tag", () => {
 			path: conditionalPathNot
 		};
 		headers['If-None-Match'] = 'W/"myetagnot"';
-		return common.get(req).then((res) => {
-			res.statusCode.should.equal(200);
-			count(req).should.equal(1);
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(304);
-			count(req).should.equal(1);
-		});
+		let res = await common.get(req);
+		res.statusCode.should.equal(200);
+		count(req).should.equal(1);
+		res = await common.get(req);
+
+		res.statusCode.should.equal(304);
+		count(req).should.equal(1);
 	});
 
-	it("should not cache responses if not tagged by upstream", () => {
+	it("should not cache responses if not tagged by upstream", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: untaggedPath
 		};
-		return common.get(req).then((res) => {
-			res.statusCode.should.equal(200);
-			count(req).should.equal(1);
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(200);
-			count(req).should.equal(2);
-		});
+		let res = await common.get(req);
+		res.statusCode.should.equal(200);
+		count(req).should.equal(1);
+		res = await common.get(req);
+		res.statusCode.should.equal(200);
+		count(req).should.equal(2);
 	});
 
-	it("should not return multiple identical tags", () => {
+	it("should not return multiple identical tags", async () => {
 		const req = {
 			port: ports.ngx,
 			path: '/multiplesame'
 		};
-		return common.get(req).then((res) => {
-			res.headers.should.have.property('x-upcache-tag', '+one, two, three');
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('x-upcache-tag', '+one, two, three');
-			count(req).should.equal(1);
-		});
+		let res = await common.get(req);
+		res.headers.should.have.property('x-upcache-tag', '+one, two, three');
+		res = await common.get(req);
+		res.headers.should.have.property('x-upcache-tag', '+one, two, three');
+		count(req).should.equal(1);
 	});
 });

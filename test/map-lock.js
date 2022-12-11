@@ -44,8 +44,8 @@ describe("Map and Lock", () => {
 		return counters[uri];
 	}
 
-	before((done) => {
-		servers = runner(ports, done);
+	before(async () => {
+		servers = await runner(ports);
 
 		app = express();
 		app.server = app.listen(ports.app);
@@ -94,72 +94,68 @@ describe("Map and Lock", () => {
 		app.use(common.errorHandler);
 	});
 
-	after((done) => {
+	after(async () => {
 		app.server.close();
-		servers.close(done);
+		await servers.close();
 	});
 
 	beforeEach(() => {
 		counters = {};
 	});
 
-	it("should map several unauthorized users to the same cache key with proxy", () => {
+	it("should map several unauthorized users to the same cache key with proxy", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testPath
 		};
-		let result;
-		return common.get(req).then((res) => {
-			res.statusCode.should.equal(403);
-			res.headers.should.have.property('x-upcache-map', testPathMapped);
-			result = res.body;
-			return common.post({
-				port: ports.ngx,
-				path: '/login',
-				query: {
-					scope: 'what'
-				}
-			});
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get(req);
-		}).then((res) => {
-			delete req.headers.Cookie;
-			res.statusCode.should.equal(403);
-			result.should.deepEqual(res.body);
-			count(req).should.equal(1);
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(403);
-			result.should.deepEqual(res.body);
-			res.headers.should.have.property('x-upcache-map', testPathMapped);
-			count(req).should.equal(1);
-			return common.post({
-				port: ports.ngx,
-				path: '/login?scope=dynA'
-			});
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get(req);
-		}).then((res) => {
-			count(req).should.equal(2);
-			res.statusCode.should.equal(200);
-			res.body.usergrants.should.deepEqual(['dynA']);
-			res.headers.should.not.have.property('x-upcache-map');
-			return common.get(req);
-		}).then((res) => {
-			count(req).should.equal(2);
-			res.statusCode.should.equal(200);
-			res.body.usergrants.should.deepEqual(['dynA']);
-			res.headers.should.not.have.property('x-upcache-map');
+
+		let res = await common.get(req);
+		res.statusCode.should.equal(403);
+		res.headers.should.have.property('x-upcache-map', testPathMapped);
+		const result = res.body;
+		res = await common.post({
+			port: ports.ngx,
+			path: '/login',
+			query: {
+				scope: 'what'
+			}
 		});
+
+		res.headers.should.have.property('set-cookie');
+		let cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get(req);
+		delete req.headers.Cookie;
+		res.statusCode.should.equal(403);
+		result.should.deepEqual(res.body);
+		count(req).should.equal(1);
+		res = await common.get(req);
+
+		res.statusCode.should.equal(403);
+		result.should.deepEqual(res.body);
+		res.headers.should.have.property('x-upcache-map', testPathMapped);
+		count(req).should.equal(1);
+		res = await common.post({
+			port: ports.ngx,
+			path: '/login?scope=dynA'
+		});
+
+		res.headers.should.have.property('set-cookie');
+		cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get(req);
+
+		count(req).should.equal(2);
+		res.statusCode.should.equal(200);
+		res.body.usergrants.should.deepEqual(['dynA']);
+		res.headers.should.not.have.property('x-upcache-map');
+		res = await common.get(req);
+
+		count(req).should.equal(2);
+		res.statusCode.should.equal(200);
+		res.body.usergrants.should.deepEqual(['dynA']);
+		res.headers.should.not.have.property('x-upcache-map');
 	});
-
-
 });

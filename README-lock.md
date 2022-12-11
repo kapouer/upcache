@@ -54,23 +54,21 @@ const locker = require('upcache').lock({
 
 app.use(locker.init);
 
-app.post("/login", function(req, res, next) {
- dblogin(req.body.login, req.body.password).then(function(user) {
-  user.grants = ['subscriber', 'editor'];
-  locker.login(res, user);
- });
+app.post("/login", async (req, res, next) => {
+ const user = await dblogin(req.body.login, req.body.password);
+ user.grants = ['subscriber', 'editor'];
+ locker.login(res, user);
 });
 
-app.get("/logout", function(req, res, next) {
+app.get("/logout", (req, res, next) => {
  locker.logout(res);
  res.sendStatus(204);
 });
 
-app.get('/api/user', locker.vary("id-:id", "webmaster"), function(req, res, next) {
-  return User.get(req.user.id).then(function(user) {
-    if (!req.user.grants.includes('webmaster')) delete user.privateData;
-    return user;
-  });
+app.get('/api/user', locker.vary("id-:id", "webmaster"), (req, res, next) => {
+  const user = await User.get(req.user.id);
+  if (!req.user.grants.includes('webmaster')) delete user.privateData;
+  return user;
 });
 
 ```

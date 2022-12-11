@@ -41,9 +41,9 @@ describe("Handshake", () => {
 		return counters[uri];
 	}
 
-	beforeEach((done) => {
+	beforeEach(async () => {
 		counters = {};
-		servers = runner(ports, done);
+		servers = await runner(ports);
 
 		app = express();
 		app.server = app.listen(ports.app);
@@ -84,52 +84,52 @@ describe("Handshake", () => {
 		app.use(common.errorHandler);
 	});
 
-	afterEach((done) => {
+	afterEach(async () => {
 		app.server.close();
-		servers.close(done);
+		await servers.close();
 	});
 
 
-	it("should cache a wildcard-restricted resource without grant then fetch the same with a grant with proxy", () => {
+	it("should cache a wildcard-restricted resource without grant then fetch the same with a grant with proxy", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testPathWildcard
 		};
-		let firstDate;
+
 		const fakeRes = {
 			req: {
 				hostname: "locahost"
 			},
 			cookie: function() {}
 		};
-		return common.post({
+		let res = await common.post({
 			port: ports.ngx,
 			path: testPathWildcardMultiple,
 			headers: {
-				Cookie: cookie.serialize("bearer", locker.login(fakeRes, {scopes: {
-					auth: true
-				}}))
+				Cookie: cookie.serialize("bearer", locker.login(fakeRes, {
+					scopes: {
+						auth: true
+					}
+				}))
 			}
-		}).then((res) => {
-			res.headers.should.not.have.property('x-upcache-key-handshake');
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(200);
-			firstDate = res.body.date;
-			return common.post({
-				port: ports.ngx,
-				path: '/login?scope=test'
-			});
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(200);
-			res.body.date.should.not.equal(firstDate);
 		});
+		res.headers.should.not.have.property('x-upcache-key-handshake');
+		res = await common.get(req);
+		res.statusCode.should.equal(200);
+		const firstDate = res.body.date;
+		res = await common.post({
+			port: ports.ngx,
+			path: '/login?scope=test'
+		});
+
+		res.headers.should.have.property('set-cookie');
+		const cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get(req);
+
+		res.statusCode.should.equal(200);
+		res.body.date.should.not.equal(firstDate);
 	});
 });

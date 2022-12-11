@@ -47,8 +47,8 @@ describe("Lock", () => {
 		return counters[uri];
 	}
 
-	before((done) => {
-		servers = runner(ports, done);
+	before(async () => {
+		servers = await runner(ports);
 
 		app = express();
 		app.server = app.listen(ports.app);
@@ -141,356 +141,335 @@ describe("Lock", () => {
 		app.use(common.errorHandler);
 	});
 
-	after((done) => {
+	after(async () => {
 		app.server.close();
-		servers.close(done);
+		await servers.close();
 	});
 
 	beforeEach(() => {
 		counters = {};
 	});
 
-	it("should get 401 when accessing a protected url without proxy", () => {
+	it("should get 401 when accessing a protected url without proxy", async () => {
 		const req = {
 			port: ports.app,
 			path: testPath
 		};
-		return common.get(req).then((res) => {
-			res.statusCode.should.equal(401);
-			count(req).should.equal(0);
-		});
+		const res = await common.get(req);
+		res.statusCode.should.equal(401);
+		count(req).should.equal(0);
 	});
 
-	it("should log in and get read access to a url without proxy", () => {
+	it("should log in and get read access to a url without proxy", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
 			port: ports.app,
 			path: testPath
 		};
-		return common.post({
+		let res = await common.post({
 			port: ports.app,
 			path: '/login'
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('x-upcache-lock', 'bookReader, bookSecond');
-			count(req).should.equal(1);
 		});
+		res.headers.should.have.property('set-cookie');
+		const cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get(req);
+
+		res.headers.should.have.property('x-upcache-lock', 'bookReader, bookSecond');
+		count(req).should.equal(1);
 	});
 
-	it("should log in and not get read access to another url without proxy", () => {
+	it("should log in and not get read access to another url without proxy", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
 			port: ports.app,
 			path: testPathNotGranted
 		};
-		return common.post({
+		let res = await common.post({
 			port: ports.app,
 			path: '/login'
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(403);
-			count(req).should.equal(0);
 		});
+		res.headers.should.have.property('set-cookie');
+		const cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get(req);
+
+		res.statusCode.should.equal(403);
+		count(req).should.equal(0);
 	});
 
-	it("should log in, access, then log out, and be denied access without proxy", () => {
+	it("should log in, access, then log out, and be denied access without proxy", async () => {
 		const headers = {};
-		return common.post({
+		let res = await common.post({
 			port: ports.app,
 			path: '/login'
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get({
-				headers: headers,
-				port: ports.app,
-				path: testPath
-			});
-		}).then((res) => {
-			res.statusCode.should.equal(200);
-			return common.post({
-				headers: headers,
-				port: ports.app,
-				path: "/logout"
-			});
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get({
-				headers: headers,
-				port: ports.app,
-				path: testPath
-			});
-		}).then((res) => {
-			res.statusCode.should.equal(401);
 		});
+		res.headers.should.have.property('set-cookie');
+		let cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get({
+			headers: headers,
+			port: ports.app,
+			path: testPath
+		});
+
+		res.statusCode.should.equal(200);
+		res = await common.post({
+			headers: headers,
+			port: ports.app,
+			path: "/logout"
+		});
+
+		res.headers.should.have.property('set-cookie');
+		cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get({
+			headers: headers,
+			port: ports.app,
+			path: testPath
+		});
+
+		res.statusCode.should.equal(401);
 	});
 
-	it("should get 401 when accessing a protected url with proxy", () => {
+	it("should get 401 when accessing a protected url with proxy", async () => {
 		const req = {
 			port: ports.ngx,
 			path: testPath
 		};
-		return common.get(req).then((res) => {
-			res.statusCode.should.equal(401);
-			count(req).should.equal(0);
-		});
+		const res = await common.get(req);
+		res.statusCode.should.equal(401);
+		count(req).should.equal(0);
 	});
 
-	it("should log in and get read access to a url and not hit the cache with proxy", () => {
+	it("should log in and get read access to a url and not hit the cache with proxy", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testPath
 		};
-		return common.post({
+		let res = await common.post({
 			port: ports.ngx,
 			path: '/login'
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.not.have.property('x-upcache-lock-key');
-			res.headers.should.have.property('x-upcache-lock', 'bookReader, bookSecond');
-			res.statusCode.should.equal(200);
-			count(req).should.equal(1);
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(200);
-			// because it should be a cache hit
-			count(req).should.equal(2);
 		});
+		res.headers.should.have.property('set-cookie');
+		const cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get(req);
+
+		res.headers.should.not.have.property('x-upcache-lock-key');
+		res.headers.should.have.property('x-upcache-lock', 'bookReader, bookSecond');
+		res.statusCode.should.equal(200);
+		count(req).should.equal(1);
+		res = await common.get(req);
+		res.statusCode.should.equal(200);
+		// because it should be a cache hit
+		count(req).should.equal(2);
 	});
 
-	it("should get headers right with proxy", () => {
+	it("should get headers right with proxy", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testPathHeadersSetting
 		};
-		return common.get(req).then((res) => {
-			res.headers.should.have.property('x-upcache-lock', 'dynA, dynB, dynC, dynD, dynE');
-			res.statusCode.should.equal(200);
-			count(req).should.equal(1);
-		});
+		const res = await common.get(req);
+		res.headers.should.have.property('x-upcache-lock', 'dynA, dynB, dynC, dynD, dynE');
+		res.statusCode.should.equal(200);
+		count(req).should.equal(1);
 	});
 
-	it("should log in and not get read access to another url with proxy", () => {
+	it("should log in and not get read access to another url with proxy", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testPathNotGranted
 		};
-		return common.post({
+		let res = await common.post({
 			port: ports.ngx,
 			path: '/login'
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(403);
-			count(req).should.equal(0);
 		});
+		res.headers.should.have.property('set-cookie');
+		const cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get(req);
+		res.statusCode.should.equal(403);
+		count(req).should.equal(0);
 	});
 
-	it("should log in, access, then log out, and be denied access with proxy", () => {
+	it("should log in, access, then log out, and be denied access with proxy", async () => {
 		const headers = {};
-		return common.post({
+		let res = await common.post({
 			port: ports.ngx,
 			path: '/login'
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get({
-				headers: headers,
-				port: ports.ngx,
-				path: testPath
-			});
-		}).then((res) => {
-			res.statusCode.should.equal(200);
-			return common.post({
-				headers: headers,
-				port: ports.ngx,
-				path: "/logout"
-			});
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get({
-				headers: headers,
-				port: ports.ngx,
-				path: testPath
-			});
-		}).then((res) => {
-			res.statusCode.should.equal(401);
 		});
+		res.headers.should.have.property('set-cookie');
+		let cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get({
+			headers: headers,
+			port: ports.ngx,
+			path: testPath
+		});
+
+		res.statusCode.should.equal(200);
+		res = await common.post({
+			headers: headers,
+			port: ports.ngx,
+			path: "/logout"
+		});
+		res.headers.should.have.property('set-cookie');
+		cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get({
+			headers: headers,
+			port: ports.ngx,
+			path: testPath
+		});
+
+		res.statusCode.should.equal(401);
 	});
 
-	it("should log in with different scopes and cache each variant with proxy", () => {
+	it("should log in with different scopes and cache each variant with proxy", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testPath
 		};
-		let firstDate;
-		return common.post({
+		let res = await common.post({
 			port: ports.ngx,
 			path: '/login?scope=bookReader'
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(200);
-			firstDate = res.body.date;
-			return common.post({
-				port: ports.ngx,
-				path: '/login?scope=bookSecond'
-			});
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(200);
-			res.body.date.should.not.equal(firstDate);
 		});
+		res.headers.should.have.property('set-cookie');
+		let cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get(req);
+
+		res.statusCode.should.equal(200);
+		const firstDate = res.body.date;
+		res = await common.post({
+			port: ports.ngx,
+			path: '/login?scope=bookSecond'
+		});
+
+		res.headers.should.have.property('set-cookie');
+		cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get(req);
+		res.statusCode.should.equal(200);
+		res.body.date.should.not.equal(firstDate);
 	});
 
-	it("should log in with different scopes on a wildcard restriction and cache each variant with proxy", () => {
+	it("should log in with different scopes on a wildcard restriction and cache each variant with proxy", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testPathWildcardMultiple
 		};
-		let firstDate;
-		return common.post({
+		let res = await common.post({
 			port: ports.ngx,
 			path: '/login?scope=book1&scope=book2'
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(200);
-			firstDate = res.body.date;
-			return common.post({
-				port: ports.ngx,
-				path: '/login?scope=book3&scope=book2'
-			});
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(200);
-			res.body.date.should.not.equal(firstDate);
 		});
+		res.headers.should.have.property('set-cookie');
+		let cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get(req);
+
+		res.statusCode.should.equal(200);
+		const firstDate = res.body.date;
+		res = await common.post({
+			port: ports.ngx,
+			path: '/login?scope=book3&scope=book2'
+		});
+
+		res.headers.should.have.property('set-cookie');
+		cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get(req);
+		res.statusCode.should.equal(200);
+		res.body.date.should.not.equal(firstDate);
 	});
 
-	it("should cache a wildcard-restricted resource without grant then fetch the same with a grant with proxy", () => {
+	it("should cache a wildcard-restricted resource without grant then fetch the same with a grant with proxy", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: testPathWildcard
 		};
-		let firstDate;
-		return common.get(req).then((res) => {
-			res.statusCode.should.equal(200);
-			firstDate = res.body.date;
-			return common.post({
-				port: ports.ngx,
-				path: '/login?redirect=' + encodeURIComponent(testPathWildcard),
-			});
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(200);
-			res.body.date.should.not.equal(firstDate);
+
+		let res = await common.get(req);
+		res.statusCode.should.equal(200);
+		const firstDate = res.body.date;
+		res = await common.post({
+			port: ports.ngx,
+			path: '/login?redirect=' + encodeURIComponent(testPathWildcard),
 		});
+
+		res.headers.should.have.property('set-cookie');
+		const cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get(req);
+
+		res.statusCode.should.equal(200);
+		res.body.date.should.not.equal(firstDate);
 	});
 
-	it("should log in as user and be authorized to read user, then be unauthorized to read another user (without proxy)", () => {
+	it("should log in as user and be authorized to read user, then be unauthorized to read another user (without proxy)", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
 			port: ports.app,
 			path: '/user/45'
 		};
-		return common.post({
+		let res = await common.post({
 			port: ports.app,
 			path: '/login?id=45'
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('x-upcache-lock', 'user-:id');
-			res.statusCode.should.equal(200);
-			res.body.id.should.equal(45);
-			req.path += '1';
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(403);
 		});
+		res.headers.should.have.property('set-cookie');
+		const cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get(req);
+
+		res.headers.should.have.property('x-upcache-lock', 'user-:id');
+		res.statusCode.should.equal(200);
+		res.body.id.should.equal(45);
+		req.path += '1';
+		res = await common.get(req);
+
+		res.statusCode.should.equal(403);
 	});
 
-	it("should log in as user and be authorized to read user, then be unauthorized to read another user (with proxy)", () => {
+	it("should log in as user and be authorized to read user, then be unauthorized to read another user (with proxy)", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
 			port: ports.ngx,
 			path: '/user/45'
 		};
-		return common.post({
+		let res = await common.post({
 			port: ports.ngx,
 			path: '/login?id=45'
-		}).then((res) => {
-			res.headers.should.have.property('set-cookie');
-			const cookies = cookie.parse(res.headers['set-cookie'][0]);
-			headers.Cookie = cookie.serialize("bearer", cookies.bearer);
-			return common.get(req);
-		}).then((res) => {
-			res.headers.should.have.property('x-upcache-lock', 'user-:id');
-			res.statusCode.should.equal(200);
-			res.body.id.should.equal(45);
-			req.path += '1';
-			return common.get(req);
-		}).then((res) => {
-			res.statusCode.should.equal(403);
 		});
+		res.headers.should.have.property('set-cookie');
+		const cookies = cookie.parse(res.headers['set-cookie'][0]);
+		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
+		res = await common.get(req);
+
+		res.headers.should.have.property('x-upcache-lock', 'user-:id');
+		res.statusCode.should.equal(200);
+		res.body.id.should.equal(45);
+		req.path += '1';
+		res = await common.get(req);
+
+		res.statusCode.should.equal(403);
 	});
 
 });

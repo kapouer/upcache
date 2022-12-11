@@ -89,7 +89,7 @@ There is no js module since it's only a matter of setting standard headers.
 const tag = require('upcache').tag;
 const polyfills = require('polyfill-library');
 
-app.get('/polyfill.js', tag('app'), function(req, res, next) {
+app.get('/polyfill.js', tag('app'), async (req, res, next) => {
   const opts = {
     uaString: req.get('user-agent'),
     minify: true,
@@ -98,12 +98,11 @@ app.get('/polyfill.js', tag('app'), function(req, res, next) {
     }
   };
   // let's assume polyfills already caches bundles by targetedFeatures
-  polyfills.getPolyfills(opts).then(function({targetedFeatures, bundle}) {
-    var hashKey = objectHash(targetedFeatures);
-    res.vary('User-Agent');
-    res.set('User-Agent', hashkey);
-    res.send(bundle);
-  });
+  const { targetedFeatures, bundle } = await polyfills.getPolyfills(opts);
+  const hashKey = objectHash(targetedFeatures);
+  res.vary('User-Agent');
+  res.set('User-Agent', hashkey);
+  res.send(bundle);
 });
 ```
 
