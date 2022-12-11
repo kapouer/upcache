@@ -69,7 +69,7 @@ function module.set(key, vars, ngx)
 			resName = reqName
 		end
 
-		resVal = resHeaders[resName] or "*"
+		resVal = resHeaders[resName] or reqVal
 
 		local map = list[reqName]
 		if map == nil then
