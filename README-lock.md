@@ -10,7 +10,7 @@ Access restrictions often comes with a heavy price to pay regarding the ability
 to cache resources.
 
 Upcache Locks let the application dynamically setup the caching proxy (nginx with
-memcached in this implementation) so resources cache keys can vary on user grants
+srcache here) so resources cache keys can vary on user grants
 based on how resources locks are set.
 
 How it works
@@ -18,12 +18,12 @@ How it works
 
 Client authenticates using a Json Web Token (jwt) signed with a RSA asymmetric key.
 
-The payload of the jwt must have a "keys" array.
+The payload of the jwt must have a `grants` array.
 
 The application writes HTTP response headers so the proxy gets:
 
 - the RSA public key (only if the proxy requested it)
-- the list of locks the resource varies upon
+- the list of locks the resource varies upon.
 
 When a client requests a resource to the proxy:
 
@@ -76,7 +76,7 @@ app.get('/api/user', locker.vary("id-:id", "webmaster"), (req, res, next) => {
 Grants
 ------
 
-A jwt must carry "grants": an array of alphanumeric strings.
+A jwt must carry `grants`: an array of alphanumeric strings.
 
 Access is considered granted (or unlocked) if one grant unlocks one of the locks.
 
