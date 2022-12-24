@@ -91,7 +91,7 @@ describe("Handshake", () => {
 	});
 
 
-	it("should cache a wildcard-restricted resource without grant then fetch the same with a grant with proxy", async () => {
+	it("cache a wildcard-restricted resource without grant then fetch the same with a grant with proxy", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,

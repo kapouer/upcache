@@ -3,6 +3,7 @@ const Path = require('path');
 const URL = require('url');
 const cookie = require('cookie');
 const express = require('express');
+const assert = require('assert').strict;
 
 const runner = require('../lib/spawner');
 const common = require('./common');
@@ -103,7 +104,7 @@ describe("Map and Lock", () => {
 		counters = {};
 	});
 
-	it("should map several unauthorized users to the same cache key with proxy", async () => {
+	it("map several unauthorized users to the same cache key with proxy", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
@@ -112,8 +113,8 @@ describe("Map and Lock", () => {
 		};
 
 		let res = await common.get(req);
-		res.statusCode.should.equal(403);
-		res.headers.should.have.property('x-upcache-map', testPathMapped);
+		assert.equal(res.statusCode, 403);
+		assert.equal(res.headers['x-upcache-map'], testPathMapped);
 		const result = res.body;
 		res = await common.post({
 			port: ports.ngx,
@@ -122,40 +123,39 @@ describe("Map and Lock", () => {
 				scope: 'what'
 			}
 		});
-
-		res.headers.should.have.property('set-cookie');
+		assert.ok('set-cookie' in res.headers);
 		let cookies = cookie.parse(res.headers['set-cookie'][0]);
 		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 		res = await common.get(req);
 		delete req.headers.Cookie;
-		res.statusCode.should.equal(403);
-		result.should.deepEqual(res.body);
-		count(req).should.equal(1);
+		assert.equal(res.statusCode, 403);
+		assert.deepEqual(result, res.body);
+		assert.equal(count(req), 1);
 		res = await common.get(req);
 
-		res.statusCode.should.equal(403);
-		result.should.deepEqual(res.body);
-		res.headers.should.have.property('x-upcache-map', testPathMapped);
-		count(req).should.equal(1);
+		assert.equal(res.statusCode, 403);
+		assert.deepEqual(result, res.body);
+		assert.equal(res.headers['x-upcache-map'], testPathMapped);
+		assert.equal(count(req), 1);
 		res = await common.post({
 			port: ports.ngx,
 			path: '/login?scope=dynA'
 		});
 
-		res.headers.should.have.property('set-cookie');
+		assert.ok('set-cookie' in res.headers);
 		cookies = cookie.parse(res.headers['set-cookie'][0]);
 		headers.Cookie = cookie.serialize("bearer", cookies.bearer);
 		res = await common.get(req);
 
-		count(req).should.equal(2);
-		res.statusCode.should.equal(200);
-		res.body.usergrants.should.deepEqual(['dynA']);
-		res.headers.should.not.have.property('x-upcache-map');
+		assert.equal(count(req), 2);
+		assert.equal(res.statusCode, 200);
+		assert.deepEqual(res.body.usergrants, ['dynA']);
+		assert.equal('x-upcache-map' in res.headers, false);
 		res = await common.get(req);
 
-		count(req).should.equal(2);
-		res.statusCode.should.equal(200);
-		res.body.usergrants.should.deepEqual(['dynA']);
-		res.headers.should.not.have.property('x-upcache-map');
+		assert.equal(count(req), 2);
+		assert.equal(res.statusCode, 200);
+		assert.deepEqual(res.body.usergrants, ['dynA']);
+		assert.equal('x-upcache-map' in res.headers, false);
 	});
 });

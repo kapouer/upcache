@@ -82,7 +82,7 @@ describe("Map", () => {
 		counters = {};
 	});
 
-	it("should map testPath to mappedTestPath", async () => {
+	it("map testPath to mappedTestPath", async () => {
 		const req = {
 			port: ports.ngx,
 			path: testPath

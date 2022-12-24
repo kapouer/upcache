@@ -1,5 +1,6 @@
 const URL = require('url');
 const express = require('express');
+const assert = require('assert').strict;
 
 const runner = require('../lib/spawner');
 const common = require('./common');
@@ -136,49 +137,50 @@ describe("Tag", () => {
 		await servers.close();
 	});
 
-	it("should cache a url", async () => {
+	it("cache a url", async () => {
 		const req = {
 			port: ports.ngx,
 			path: testPath
 		};
 		let res = await common.get(req);
-		res.headers.should.have.property('x-upcache-tag', 'test');
+		assert.equal(res.headers['x-upcache-tag'], 'test');
 		res = await common.get(req);
-		res.headers.should.have.property('x-upcache-tag', 'test');
-		count(req).should.equal(1);
+		assert.equal(res.headers['x-upcache-tag'], 'test');
+		assert.equal(count(req), 1);
 	});
 
-	it("should honor req.params tag replacement", async () => {
+	it("honor req.params tag replacement", async () => {
 		const req = {
 			port: ports.ngx,
 			path: "/params/me"
 		};
 		let res = await common.get(req);
-		res.headers.should.have.property('x-upcache-tag', 'site-me');
-		res.headers.should.have.property('cache-control', 'public, max-age=60');
+
+		assert.equal(res.headers['x-upcache-tag'], 'site-me');
+		assert.equal(res.headers['cache-control'], 'public, max-age=60');
 		req.path = "/params/none";
 		res = await common.get(req);
 
-		res.headers.should.not.have.property('x-upcache-tag');
-		res.headers.should.not.have.property('cache-control');
+		assert.equal('x-upcache-tag' in res.headers, false);
+		assert.equal('cache-control' in res.headers, false);
 	});
 
-	it("should honor req.params tag replacement with a previous tag set", async () => {
+	it("honor req.params tag replacement with a previous tag set", async () => {
 		const req = {
 			port: ports.ngx,
 			path: "/params2/me"
 		};
 		let res = await common.get(req);
-		res.headers.should.have.property('x-upcache-tag', 'prev, site-me');
-		res.headers.should.have.property('cache-control', 'public, max-age=60');
+		assert.equal(res.headers['x-upcache-tag'], 'prev, site-me');
+		assert.equal(res.headers['cache-control'], 'public, max-age=60');
 		req.path = "/params2/none";
 		res = await common.get(req);
 
-		res.headers.should.have.property('x-upcache-tag', 'prev');
-		res.headers.should.not.have.property('cache-control');
+		assert.equal(res.headers['x-upcache-tag'], 'prev');
+		assert.equal('cache-control' in res.headers, false);
 	}).timeout(0);
 
-	it("should invalidate a tag using a post", async () => {
+	it("invalidate a tag using a post", async () => {
 		const req = {
 			port: ports.ngx,
 			path: testPath
@@ -186,14 +188,14 @@ describe("Tag", () => {
 		let res = await common.get(req);
 
 		const firstDate = Date.parse(res.body.date);
-		res.headers.should.have.property('x-upcache-tag', 'test');
+		assert.equal(res.headers['x-upcache-tag'], 'test');
 		res = await common.post(req, 'postbody');
-		res.headers.should.have.property('x-upcache-tag', '+test');
+		assert.equal(res.headers['x-upcache-tag'], '+test');
 		res = await common.get(req);
-		Date.parse(res.body.date).should.be.greaterThan(firstDate);
+		assert.ok(Date.parse(res.body.date) > firstDate);
 	});
 
-	it("should invalidate one tag on a route with multiple tags using a post", async () => {
+	it("invalidate one tag on a route with multiple tags using a post", async () => {
 		const req = {
 			port: ports.ngx,
 			path: "/multiple"
@@ -201,34 +203,34 @@ describe("Tag", () => {
 		let res = await common.get(req);
 
 		const firstDate = Date.parse(res.body.date);
-		res.headers.should.have.property('x-upcache-tag', 'one, two');
+		assert.equal(res.headers['x-upcache-tag'], 'one, two');
 		res = await common.post(req, 'postbody');
 
-		res.headers.should.have.property('x-upcache-tag', '+two');
+		assert.equal(res.headers['x-upcache-tag'], '+two');
 		res = await common.get(req);
 
-		Date.parse(res.body.date).should.be.greaterThan(firstDate);
+		assert.ok(Date.parse(res.body.date) > firstDate);
 	});
 
-	it("should invalidate a tag using a post to a different path", async () => {
+	it("invalidate a tag using a post to a different path", async () => {
 		const req = {
 			port: ports.ngx,
 			path: testPath
 		};
 		let res = await common.get(req);
 		const firstDate = Date.parse(res.body.date);
-		res.headers.should.have.property('x-upcache-tag', 'test');
+		assert.equal(res.headers['x-upcache-tag'], 'test');
 		res = await common.post({
 			port: ports.ngx,
 			path: "/a"
 		}, 'postbody');
 
-		res.headers.should.have.property('x-upcache-tag', '+test');
+		assert.equal(res.headers['x-upcache-tag'], '+test');
 		res = await common.get(req);
-		Date.parse(res.body.date).should.be.greaterThan(firstDate);
+		assert.ok(Date.parse(res.body.date) > firstDate);
 	});
 
-	it("should handle conditional requests from upstream ETag once cached", async () => {
+	it("handle conditional requests from upstream ETag once cached", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
@@ -236,15 +238,15 @@ describe("Tag", () => {
 			path: conditionalPath
 		};
 		let res = await common.get(req);
-		res.headers.should.have.property('etag');
+		assert.ok('etag' in res.headers);
 		headers['If-None-Match'] = res.headers.etag;
 		res = await common.get(req);
 
-		res.statusCode.should.equal(304);
-		count(req).should.equal(1);
+		assert.equal(res.statusCode, 304);
+		assert.equal(count(req), 1);
 	});
 
-	it("should not let conditional requests go to upstream", async () => {
+	it("not let conditional requests go to upstream", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
@@ -253,15 +255,15 @@ describe("Tag", () => {
 		};
 		headers['If-None-Match'] = 'W/"myetagnot"';
 		let res = await common.get(req);
-		res.statusCode.should.equal(200);
-		count(req).should.equal(1);
+		assert.equal(res.statusCode, 200);
+		assert.equal(count(req), 1);
 		res = await common.get(req);
 
-		res.statusCode.should.equal(304);
-		count(req).should.equal(1);
+		assert.equal(res.statusCode, 304);
+		assert.equal(count(req), 1);
 	});
 
-	it("should not cache responses if not tagged by upstream", async () => {
+	it("not cache responses if not tagged by upstream", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
@@ -269,22 +271,22 @@ describe("Tag", () => {
 			path: untaggedPath
 		};
 		let res = await common.get(req);
-		res.statusCode.should.equal(200);
-		count(req).should.equal(1);
+		assert.equal(res.statusCode, 200);
+		assert.equal(count(req), 1);
 		res = await common.get(req);
-		res.statusCode.should.equal(200);
-		count(req).should.equal(2);
+		assert.equal(res.statusCode, 200);
+		assert.equal(count(req), 2);
 	});
 
-	it("should not return multiple identical tags", async () => {
+	it("not return multiple identical tags", async () => {
 		const req = {
 			port: ports.ngx,
 			path: '/multiplesame'
 		};
 		let res = await common.get(req);
-		res.headers.should.have.property('x-upcache-tag', '+one, two, three');
+		assert.equal(res.headers['x-upcache-tag'], '+one, two, three');
 		res = await common.get(req);
-		res.headers.should.have.property('x-upcache-tag', '+one, two, three');
-		count(req).should.equal(1);
+		assert.equal(res.headers['x-upcache-tag'], '+one, two, three');
+		assert.equal(count(req), 1);
 	});
 });
