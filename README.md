@@ -16,13 +16,15 @@ Upcache has several ways of changing the cache keys:
 Requirements
 ------------
 
-- nginx >= 1.8, with these openresty's modules
-  lua-nginx-module (with luajit enabled or else it fails with missing ffi package)
-  set-misc-nginx-module
-  srcache-nginx-module
-  memc-nginx-module (if using memcached)
+In debian/12 these packages are easy to install:
 
+- nginx
+- libnginx-mod-http-srcache-filter
+- libnginx-mod-http-set-misc
+- libnginx-mod-http-memc (if using memcached, or for running the test suite
 - memcached or redis
+- lua-resty-core
+- lua-resty-lrucache
 
 - a Node.js express app
 
