@@ -23,12 +23,16 @@ function module.request()
 	local method = ngx.req.get_method()
 	if method == "GET" or method == "HEAD" then
 		local key = upkey(vars)
-		key = Lock.get(key, vars, ngx)
-		key = Vary.get(key, vars, ngx)
-		key = Map.get(key)
-		key = Tag.get(key)
-		vars.fetchKey = ngx.md5(key)
-		console.info("request key '", key, "'")
+		local nkey = Lock.get(key, vars, ngx)
+		nkey = Vary.get(nkey, vars, ngx)
+		nkey = Map.get(nkey)
+		nkey = Tag.get(nkey)
+		if nkey ~= key then
+			console.info("Req key changed: ", key, " >> ", nkey)
+		else
+			console.info("Req key: ", nkey)
+		end
+		vars.fetchKey = ngx.md5(nkey)
 	else
 		Lock.request(vars)
 	end
@@ -50,11 +54,12 @@ function module.response()
 		if vars.storeSkip == '1' then
 			-- do nothing
 		elseif nkey ~= key then
+			console.info("New key: ", key, " >> ", nkey)
 			vars.storeKey = ngx.md5(nkey)
 		else
+			console.info("Same key: ", key)
 			vars.storeKey = vars.fetchKey
 		end
-		console.info("response key '", nkey, "'")
 	else
 		Lock.response(vars, ngx)
 		Tag.response(vars, ngx)
