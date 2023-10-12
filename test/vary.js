@@ -91,6 +91,10 @@ describe("Vary", () => {
 
 		app.get(testLanguage, tag('app'), (req, res, next) => {
 			res.vary('Accept-Language');
+			if (req.query.nolang) {
+				res.send('nolang');
+				return;
+			}
 			count(req, 1);
 			const langs = ['en', 'fr'];
 			if (req.acceptsLanguages(langs) == 'en') {
@@ -100,8 +104,8 @@ describe("Vary", () => {
 				res.set('Content-Language', 'fr');
 				res.send('Bien !');
 			} else {
-				res.set('Content-Language', 'pt');
-				res.send('Bem !');
+				res.set('Content-Language', 'fr');
+				res.send('Default');
 			}
 		});
 
@@ -117,8 +121,14 @@ describe("Vary", () => {
 			} else if (req.acceptsLanguages(langs) == 'fr') {
 				res.set('Content-Language', 'fr');
 				str = "Bien";
+			} else {
+				res.set('Content-Language', 'en');
+				str = 'default';
 			}
-			if (req.accepts('xml')) {
+			if (req.accepts('html')) {
+				res.type('html');
+				res.send(`<!DOCTYPE html><html><body>${str}</body></html>`);
+			} else if (req.accepts('xml')) {
 				res.type('application/xml');
 				res.send(`<xml>${str}</xml>`);
 			} else if (req.accepts('json')) {
@@ -266,33 +276,40 @@ describe("Vary", () => {
 			port: ports.ngx,
 			path: testLanguage
 		};
-		const english = "fr;q=0.8, en, pt";
+		const english = "en-GB,en;q=0.9";
 		const french = "fr;q=0.8, en;q=0.7, pt;q=0.5";
+
+		await common.get({
+			headers: {'Accept-Language': english},
+			port: ports.ngx,
+			path: testLanguage + '?nolang=1'
+		});
+
 		req.headers['Accept-Language'] = english;
 		let res = await common.get(req);
 		assert.equal(res.headers['vary'], 'Accept-Language');
 		assert.equal(res.headers['content-language'], 'en');
+
 		req.headers['Accept-Language'] = french;
 		res = await common.get(req);
-
 		assert.equal(count(req), 2);
 		assert.equal(res.headers['vary'], 'Accept-Language');
 		assert.equal(res.headers['content-language'], 'fr');
+
 		req.headers['Accept-Language'] = english;
 		res = await common.get(req);
-
 		assert.equal(count(req), 2);
 		assert.equal(res.headers['vary'], 'Accept-Language');
 		assert.equal(res.headers['content-language'], 'en');
+
 		req.headers['Accept-Language'] = french;
 		res = await common.get(req);
-
 		assert.equal(res.headers['vary'], 'Accept-Language');
 		assert.equal(res.headers['content-language'], 'fr');
 		assert.equal(count(req), 2);
+
 		req.headers['Accept-Language'] = "fr;q=0.8, en;q=0.9"; // another english
 		res = await common.get(req);
-
 		assert.equal(res.headers['vary'], 'Accept-Language');
 		assert.equal(res.headers['content-language'], 'en');
 		assert.equal(count(req), 3);
@@ -305,44 +322,87 @@ describe("Vary", () => {
 			port: ports.ngx,
 			path: testMulti
 		};
-		const english = "fr;q=0.8, en, pt";
+		let counter = 0;
+		const english = "en-GB,en;q=0.9";
 		const french = "fr;q=0.8, en;q=0.7, pt;q=0.5";
+		const browserAccept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7";
+
+		req.headers['Accept-Language'] = english;
+		let res = await common.get({
+			headers: headers,
+			port: ports.ngx,
+			path: testLanguage
+		});
+		assert.equal(res.headers['vary'], 'Accept-Language');
+		assert.equal(res.headers['content-language'], 'en');
+
+		req.headers['Accept-Language'] = null;
+		req.headers.Accept = browserAccept;
+		res = await common.get(req);
+		counter++;
+		assert.equal(res.headers['vary'], 'Accept-Encoding, Accept-Language, Accept');
+		assert.equal(res.headers['content-language'], 'en');
+		assert.equal(res.headers['content-type'], 'text/html; charset=utf-8');
+
+		req.headers['Accept-Language'] = english;
+		req.headers.Accept = browserAccept;
+		res = await common.get(req);
+		counter++;
+		assert.equal(res.headers['vary'], 'Accept-Encoding, Accept-Language, Accept');
+		assert.equal(res.headers['content-language'], 'en');
+		assert.equal(res.headers['content-type'], 'text/html; charset=utf-8');
+
+		req.headers['Accept-Language'] = french;
+		req.headers.Accept = browserAccept;
+		res = await common.get(req);
+		counter++;
+		assert.equal(count(req), counter);
+		assert.equal(res.headers['vary'], 'Accept-Encoding, Accept-Language, Accept');
+		assert.equal(res.headers['content-language'], 'fr');
+		assert.equal(res.headers['content-type'], 'text/html; charset=utf-8');
+
 		req.headers['Accept-Language'] = english;
 		req.headers.Accept = "application/json";
-
-		let res = await common.get(req);
+		res = await common.get(req);
+		counter++;
+		assert.equal(count(req), counter);
 		assert.equal(res.headers['vary'], 'Accept-Language, Accept');
 		assert.equal(res.headers['content-language'], 'en');
 		assert.equal(res.headers['content-type'], 'application/json; charset=utf-8');
-		req.headers['Accept-Language'] = french;
-		res = await common.get(req);
 
-		assert.equal(count(req), 2);
+		req.headers['Accept-Language'] = french;
+		req.headers.Accept = "application/json";
+		res = await common.get(req);
+		counter++;
+		assert.equal(count(req), counter);
 		assert.equal(res.headers['vary'], 'Accept-Language, Accept');
 		assert.equal(res.headers['content-language'], 'fr');
 		assert.equal(res.headers['content-type'], 'application/json; charset=utf-8');
-		req.headers['Accept-Language'] = english;
-		res = await common.get(req);
 
-		assert.equal(count(req), 2);
+		req.headers['Accept-Language'] = english;
+		req.headers.Accept = "application/json";
+		res = await common.get(req);
+		assert.equal(count(req), counter);
 		assert.equal(res.headers['vary'], 'Accept-Language, Accept');
 		assert.equal(res.headers['content-language'], 'en');
 		assert.equal(res.headers['content-type'], 'application/json; charset=utf-8');
+
+		req.headers['Accept-Language'] = english;
 		req.headers.Accept = "application/xml";
 		res = await common.get(req);
-
+		counter++;
+		assert.equal(count(req), counter);
 		assert.equal(res.headers['vary'], 'Accept-Language, Accept');
 		assert.equal(res.headers['content-language'], 'en');
 		assert.equal(res.headers['content-type'], 'application/xml; charset=utf-8');
-		assert.equal(count(req), 3);
+
 		req.headers['Accept-Language'] = french;
 		req.headers.Accept = "application/json";
 		res = await common.get(req);
-
+		assert.equal(count(req), counter);
 		assert.equal(res.headers['vary'], 'Accept-Language, Accept');
 		assert.equal(res.headers['content-language'], 'fr');
 		assert.equal(res.headers['content-type'], 'application/json; charset=utf-8');
-		assert.equal(count(req), 3);
 	});
 
 
