@@ -60,11 +60,12 @@ Simplified access to cache-control directives is made available through
 which accepts one argument:
 
 - string or number: a ttl in string format or in seconds
-- object: options for [express-cache-response-directive](https://github.com/dantman/express-cache-response-directive).
+- object: options for [express-cache-response-directive](https://github.com/kapouer/express-cache-response-directive).
 
 A `for()` call has no effect if the previous `tag()` call actually did not insert a tag.
 
 A middleware for disabling cache is also available with `tag.disable()`.
+If set, other calls to `tag.for()` on the same route will be ignored.
 
 ```js
 app.get('/api/stats', tag.for('1d'), appMw);
