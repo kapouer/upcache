@@ -12,7 +12,7 @@ dependencies = {
    "lua >= 5.1",
    "lua-resty-jwt = 0.2.3",
 	"lua-resty-string >= 0.09",
-   "lua-messagepack >= 0.5.2"
+   "lua-messagepack >= 0.5.3"
 }
 build = {
    type = "builtin",
