@@ -27,7 +27,7 @@ end
 module.prefixHeader = "X-Upcache"
 module.variants = "upcacheVariants"
 
-function module.parseHeader(obj)
+function module.headerList(obj)
 	if obj == nil then
 		return nil
 	end
@@ -41,6 +41,16 @@ function module.parseHeader(obj)
 		end
 	end
 	return list
+end
+
+function module.headerString(obj)
+	if obj == nil then
+		return nil
+	elseif type(obj) == "string" then
+		return obj
+	else
+		return table.concat(obj, ', ')
+	end
 end
 
 function module.get(dict, key)

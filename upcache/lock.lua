@@ -156,7 +156,7 @@ end
 function module.set(key, vars, ngx)
 	local headers = ngx.header
 	local conf = response(vars, ngx)
-	local locks = common.parseHeader(headers[headerLock])
+	local locks = common.headerList(headers[headerLock])
 	if locks == nil then
 		return key
 	end

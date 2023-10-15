@@ -26,9 +26,9 @@ local function build_key(key, headers, list, vars)
 		if reqName:sub(1, 9) == "X-Cookie-" then
 			reqVal = vars['cookie_' .. reqName:sub(10)]
 		else
-			reqVal = headers[reqName] or "*"
+			reqVal = headers[reqName]
 		end
-		resVal = map[reqVal]
+		resVal = map[common.headerString(reqVal) or '*']
 		if resVal ~= nil then
 			key = reqName .. ':' .. resVal .. ' ' .. key
 		end
@@ -46,7 +46,7 @@ end
 
 function module.set(key, vars, ngx)
 	local resHeaders = ngx.header
-	local varies = common.parseHeader(resHeaders[varyHeader])
+	local varies = common.headerList(resHeaders[varyHeader])
 	if varies == nil then
 		return key
 	end
@@ -56,20 +56,22 @@ function module.set(key, vars, ngx)
 	local resName, resVal, reqVal
 	for i, reqName in ipairs(varies) do
 		if reqName == "Accept" then
-			reqVal = reqHeaders[reqName] or "*"
+			reqVal = reqHeaders[reqName]
 			resName = "Content-Type"
 		elseif reqName:sub(1, 7) == "Accept-" then
-			reqVal = reqHeaders[reqName] or "*"
+			reqVal = reqHeaders[reqName]
 			resName = "Content-" .. reqName:sub(8)
 		elseif reqName:sub(1, 9) == "X-Cookie-" then
-			reqVal = vars['cookie_' .. reqName:sub(10)] or "*"
+			reqVal = vars['cookie_' .. reqName:sub(10)]
 			resName = reqName
 		else
-			reqVal = reqHeaders[reqName] or "*"
+			reqVal = reqHeaders[reqName]
 			resName = reqName
 		end
-
-		resVal = resHeaders[resName] or reqVal
+		if reqVal == nil then
+			reqVal = '*'
+		end
+		resVal = common.headerString(resHeaders[resName] or reqVal)
 
 		local map = list[reqName]
 		if map == nil then

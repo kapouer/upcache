@@ -21,7 +21,7 @@ local function build_key(key, tags)
 end
 
 local function response(vars, ngx)
-	local tags = common.parseHeader(ngx.header[tagHeader])
+	local tags = common.headerList(ngx.header[tagHeader])
 	if tags == nil
 		then return nil
 	end
