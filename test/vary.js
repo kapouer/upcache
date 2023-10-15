@@ -321,6 +321,12 @@ describe("Vary", () => {
 		assert.equal(res.headers['vary'], 'Accept-Language');
 		assert.equal(res.headers['content-language'], 'en');
 		assert.equal(count(req), 3);
+
+		req.headers['Accept-Language'] = "fr;q=0.8, en;q=0.9"; // another english
+		res = await common.get(req);
+		assert.equal(res.headers['vary'], 'Accept-Language');
+		assert.equal(res.headers['content-language'], 'en');
+		assert.equal(count(req), 3);
 	});
 
 	it("Accept-Language and Accept", async () => {
