@@ -23,6 +23,7 @@ describe("Vary", () => {
 	const testNegotiation = '/nego';
 	const testLanguage = "/lang";
 	const testMulti = "/multi";
+	const testDup = "/dup";
 	let counters = {};
 
 	function count(uri, inc) {
@@ -134,6 +135,13 @@ describe("Vary", () => {
 			} else if (req.accepts('json')) {
 				res.json({xml: str});
 			}
+		});
+
+		app.get(testDup, tag('app'), (req, res, next) => {
+			res.vary('Accept-Language');
+			count(req, 1);
+			res.set('Content-Language', 'en');
+			res.send('Good !');
 		});
 	});
 
@@ -442,5 +450,26 @@ describe("Vary", () => {
 		assert.equal(res.headers['vary'], 'X-Cookie-Prerender');
 		assert.equal('x-cookie-prerender' in res.headers, false);
 		assert.equal(count(req), 3);
+	});
+
+	it("duplicated headers", async () => {
+		const req = {
+			headers: {},
+			port: ports.ngx,
+			path: testDup
+		};
+		req.headers['Accept-Language'] = "fr;q=0.8, en;q=0.9";
+		res = await common.get(req);
+		assert.equal(res.headers['vary'], 'Accept-Language');
+		assert.equal(res.headers['content-language'], 'en');
+		assert.equal(count(req), 1);
+
+		// express req.headers sees the same but not nginx/lua
+		req.headers['Accept-Language'] = ["fr;q=0.8", "en;q=0.9"];
+		res = await common.get(req);
+		assert.equal(res.headers['vary'], 'Accept-Language');
+		assert.equal(res.headers['content-language'], 'en');
+		assert.equal(count(req), 1);
+
 	});
 });
