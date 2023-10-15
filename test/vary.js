@@ -146,7 +146,7 @@ describe("Vary", () => {
 		counters = {};
 	});
 
-	it("vary on arbitrary request header", async () => {
+	it("arbitrary request header", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
@@ -188,7 +188,7 @@ describe("Vary", () => {
 		assert.equal(count(req), 3);
 	});
 
-	it("vary upon two groups of user-agent", async () => {
+	it("two groups of user-agent", async () => {
 		const agent1 = 'Mozilla/5.0 (Android 4.4; Mobile; rv:41.0) Gecko/41.0 Firefox/41.0';
 		const agent2 = 'Mozilla/5.0 (Android 4.4; Mobile; rv:41.0) Gecko/41.0 Firefox/42.0';
 		const agent3 = 'Mozilla/5.0';
@@ -227,7 +227,7 @@ describe("Vary", () => {
 		assert.equal(count(req), 3);
 	});
 
-	it("vary upon Accept, Content-Type", async () => {
+	it("Accept, Content-Type", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
@@ -269,7 +269,7 @@ describe("Vary", () => {
 		assert.equal(count(req), 4);
 	});
 
-	it("vary upon Accept-Language, Content-Language", async () => {
+	it("Accept-Language, Content-Language", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
@@ -315,7 +315,7 @@ describe("Vary", () => {
 		assert.equal(count(req), 3);
 	});
 
-	it("vary upon Accept-Language and Accept", async () => {
+	it("Accept-Language and Accept", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
@@ -406,7 +406,7 @@ describe("Vary", () => {
 	});
 
 
-	it("vary on Cookie Name", async () => {
+	it("Cookie Name", async () => {
 		const headers = {};
 		const req = {
 			headers: headers,
