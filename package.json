@@ -32,11 +32,11 @@
     "url": "https://github.com/kapouer/upcache/issues"
   },
   "dependencies": {
+    "@kapouer/express-cache-response-directive": "^2.1.0",
     "class-deferred": "^1.0.1",
     "cookie": "^0.5.0",
     "dashdash": "^2.0.0",
     "debug": "^4.3.4",
-    "@kapouer/express-cache-response-directive": "^2.1.0",
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
