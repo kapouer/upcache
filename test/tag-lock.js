@@ -123,7 +123,7 @@ describe("Tag and Lock", () => {
 		app.get(testPathDynamic, locker.init, tag('test'), (req, res, next) => {
 			count(req, 1);
 
-			const grants = req.user.grants || [];
+			const grants = req.user.grants;
 			const locks = ['dynA', 'dynB'];
 			locker.headers(res, locks);
 

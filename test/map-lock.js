@@ -73,7 +73,7 @@ describe("Map and Lock", () => {
 		app.get(testPath, upcache.tag('app'), locker.init, (req, res, next) => {
 			count(req, 1);
 
-			const grants = req.user.grants || [];
+			const grants = req.user.grants;
 			const locks = ['dynA', 'dynB'];
 			locker.headers(res, locks);
 
