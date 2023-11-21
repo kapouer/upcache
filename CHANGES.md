@@ -49,3 +49,14 @@ CHANGES
 - more es6 javascript
 - fix Vary handling when no response header is set
 - test Vary with Map
+
+2.7.0
+-----
+
+- tag.for cannot override tag.disable
+- better support for headers lists
+
+2.8.0
+-----
+
+- lock: req.user.grants is always set
