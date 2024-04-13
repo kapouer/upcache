@@ -34,15 +34,15 @@
   "dependencies": {
     "@kapouer/express-cache-response-directive": "^2.1.0",
     "class-deferred": "^1.0.1",
-    "cookie": "^0.5.0",
+    "cookie": "^0.6.0",
     "dashdash": "^2.0.0",
     "debug": "^4.3.4",
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "@kapouer/eslint-config": "^2.0.0",
-    "express": "^4.18.2",
-    "mocha": "^10.2.0"
+    "express": "^4.19.2",
+    "mocha": "^10.4.0"
   },
   "eslintConfig": {
     "extends": "@kapouer/eslint-config",
